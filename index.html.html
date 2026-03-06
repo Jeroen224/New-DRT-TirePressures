@@ -1,0 +1,2167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="theme-color" content="#1a3a8f" />
+<title>DRT Tirepressures</title>
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue-dark:   #0d2b7a;
+    --blue-main:   #1a3a8f;
+    --blue-mid:    #1e4db7;
+    --blue-light:  #2563eb;
+    --blue-soft:   #dbeafe;
+    --yellow-main: #f5c800;
+    --yellow-dark: #d4a800;
+    --yellow-light:#fef9c3;
+    --white:       #ffffff;
+    --grey-bg:     #f4f6fb;
+    --grey-border: #d1d5db;
+    --grey-text:   #6b7280;
+    --dark-text:   #111827;
+    --success:     #16a34a;
+    --danger:      #dc2626;
+    --radius-sm:   8px;
+    --radius-md:   14px;
+    --radius-lg:   22px;
+    --shadow:      0 4px 20px rgba(26,58,143,0.13);
+    --shadow-card: 0 2px 10px rgba(26,58,143,0.10);
+    --font:        'Segoe UI', 'Inter', Arial, sans-serif;
+    --transition:  0.2s ease;
+  }
+
+  html, body {
+    height: 100%;
+    font-family: var(--font);
+    background: var(--grey-bg);
+    color: var(--dark-text);
+    overflow: hidden;
+  }
+
+  #app {
+    max-width: 430px;
+    margin: 0 auto;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    background: var(--grey-bg);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 40px rgba(0,0,0,0.18);
+  }
+
+  .screen {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+    animation: fadeIn 0.25s ease;
+  }
+  .screen.active { display: flex; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  .app-header {
+    background: var(--blue-main);
+    padding: 14px 18px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(13,43,122,0.25);
+    flex-shrink: 0;
+    min-height: 62px;
+  }
+  .app-header .header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .app-header .back-btn {
+    background: rgba(255,255,255,0.15);
+    border: none;
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--white);
+    font-size: 20px;
+    transition: background var(--transition);
+    flex-shrink: 0;
+  }
+  .app-header .back-btn:active { background: rgba(255,255,255,0.3); }
+  .app-header .header-title {
+    color: var(--white);
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .app-header .header-subtitle {
+    color: var(--yellow-main);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+    margin-top: 1px;
+  }
+
+  /* Language Selector */
+  .lang-selector {
+    display: flex;
+    align-items: center;
+    background: rgba(255,255,255,0.15);
+    border-radius: 20px;
+    padding: 3px;
+    flex-shrink: 0;
+  }
+  .lang-btn {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.7);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 5px 8px;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all var(--transition);
+    -webkit-tap-highlight-color: transparent;
+    letter-spacing: 0.3px;
+  }
+  .lang-btn.active {
+    background: var(--yellow-main);
+    color: var(--blue-dark);
+  }
+  .lang-btn:not(.active):active { background: rgba(255,255,255,0.2); }
+
+  .screen-body {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 20px 18px 100px;
+  }
+  .screen-body::-webkit-scrollbar { width: 0; }
+
+  .bottom-actions {
+    padding: 14px 18px 20px;
+    background: var(--white);
+    border-top: 1px solid var(--grey-border);
+    flex-shrink: 0;
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn {
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 15px 22px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    letter-spacing: 0.3px;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary {
+    background: var(--blue-main);
+    color: var(--white);
+    flex: 1;
+    box-shadow: 0 4px 14px rgba(26,58,143,0.35);
+  }
+  .btn-primary:active { background: var(--blue-dark); }
+  .btn-accent {
+    background: var(--yellow-main);
+    color: var(--blue-dark);
+    flex: 1;
+    box-shadow: 0 4px 14px rgba(245,200,0,0.35);
+  }
+  .btn-accent:active { background: var(--yellow-dark); }
+  .btn-outline {
+    background: transparent;
+    color: var(--blue-main);
+    border: 2px solid var(--blue-main);
+  }
+  .btn-outline:active { background: var(--blue-soft); }
+  .btn-danger {
+    background: var(--danger);
+    color: var(--white);
+  }
+  .btn-sm {
+    padding: 10px 16px;
+    font-size: 14px;
+    border-radius: var(--radius-sm);
+  }
+  .btn-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--transition);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-icon:active { background: rgba(0,0,0,0.08); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .form-group { margin-bottom: 18px; }
+  .form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--blue-main);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+  .form-label span.required { color: var(--yellow-dark); margin-left: 2px; }
+
+  .form-control {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid var(--grey-border);
+    border-radius: var(--radius-md);
+    font-size: 16px;
+    font-family: var(--font);
+    color: var(--dark-text);
+    background: var(--white);
+    transition: border-color var(--transition), box-shadow var(--transition);
+    -webkit-appearance: none;
+    appearance: none;
+    outline: none;
+  }
+  .form-control:focus {
+    border-color: var(--blue-light);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+  }
+  .form-control.error { border-color: var(--danger); }
+  .form-control::placeholder { color: #aab0bc; }
+
+  select.form-control {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%231a3a8f' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 44px;
+    cursor: pointer;
+  }
+
+  .error-msg {
+    color: var(--danger);
+    font-size: 12px;
+    margin-top: 4px;
+    display: none;
+  }
+  .error-msg.show { display: block; }
+
+  .autocomplete-wrap { position: relative; }
+  .autocomplete-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    background: var(--white);
+    border: 2px solid var(--blue-light);
+    border-radius: var(--radius-md);
+    z-index: 100;
+    max-height: 180px;
+    overflow-y: auto;
+    box-shadow: var(--shadow);
+    display: none;
+  }
+  .autocomplete-list.show { display: block; }
+  .autocomplete-item {
+    padding: 13px 16px;
+    font-size: 15px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--grey-border);
+    transition: background var(--transition);
+  }
+  .autocomplete-item:last-child { border-bottom: none; }
+  .autocomplete-item:active, .autocomplete-item:hover { background: var(--blue-soft); }
+
+  .toggle-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: 2px solid var(--blue-main);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+  .toggle-option {
+    padding: 14px;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--transition);
+    background: var(--white);
+    color: var(--blue-main);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    border: none;
+  }
+  .toggle-option:first-child { border-right: 1px solid var(--blue-main); }
+  .toggle-option.active { background: var(--blue-main); color: var(--white); }
+  .toggle-option.active.wet { background: var(--blue-light); }
+
+  .section-title {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--grey-text);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 22px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--grey-border);
+  }
+
+  .card {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: 18px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow-card);
+  }
+
+  .info-badge {
+    background: var(--blue-soft);
+    border-left: 4px solid var(--blue-main);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--blue-dark);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Screen 1 Splash */
+  .splash-logo-wrap {
+    background: linear-gradient(160deg, var(--blue-dark) 0%, var(--blue-main) 55%, var(--blue-mid) 100%);
+    padding: 40px 24px 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .splash-logo-img {
+    width: 150px;
+    height: 150px;
+    object-fit: contain;
+    border-radius: 50%;
+    background: white;
+    padding: 8px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+    margin-bottom: 14px;
+    border: 4px solid var(--yellow-main);
+  }
+  .splash-logo-placeholder {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: var(--yellow-main);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+    margin-bottom: 14px;
+    border: 4px solid rgba(255,255,255,0.3);
+  }
+  .splash-logo-placeholder span:first-child {
+    font-size: 40px; font-weight: 900; color: var(--blue-dark); line-height: 1;
+  }
+  .splash-logo-placeholder span:last-child {
+    font-size: 13px; font-weight: 700; color: var(--blue-dark);
+  }
+  .splash-app-name {
+    font-size: 26px; font-weight: 900; color: var(--white);
+    letter-spacing: 0.5px; text-align: center;
+  }
+  .splash-app-name span { color: var(--yellow-main); }
+  .splash-tagline {
+    font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 4px; text-align: center;
+  }
+
+  /* Mechanic list */
+  .mechanic-list { margin-top: 4px; }
+  .mechanic-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-radius: var(--radius-md);
+    border: 2px solid var(--grey-border);
+    background: var(--white);
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all var(--transition);
+    box-shadow: var(--shadow-card);
+  }
+  .mechanic-item:active { transform: scale(0.98); }
+  .mechanic-item.selected {
+    border-color: var(--blue-main);
+    background: var(--blue-soft);
+    box-shadow: 0 0 0 3px rgba(26,58,143,0.15);
+  }
+  .mechanic-item .mechanic-name {
+    font-size: 16px; font-weight: 600;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .mechanic-item .mechanic-name .avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--blue-main); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px; flex-shrink: 0;
+  }
+  .mechanic-item.selected .avatar { background: var(--yellow-main); color: var(--blue-dark); }
+  .mechanic-item .selected-check { color: var(--blue-main); font-size: 22px; display: none; }
+  .mechanic-item.selected .selected-check { display: block; }
+  .mechanic-item .delete-mech-btn {
+    color: var(--danger); font-size: 18px; background: none; border: none;
+    cursor: pointer; padding: 6px; border-radius: 6px;
+    -webkit-tap-highlight-color: transparent; display: none;
+  }
+
+  .add-mechanic-panel {
+    background: var(--white);
+    border-radius: var(--radius-md);
+    border: 2px dashed var(--blue-light);
+    padding: 16px; margin-bottom: 14px; display: none;
+  }
+  .add-mechanic-panel.show { display: block; }
+
+  /* Session chip */
+  .session-chip {
+    background: var(--blue-main);
+    color: white;
+    border-radius: var(--radius-lg);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    cursor: pointer;
+    box-shadow: var(--shadow-card);
+    transition: background var(--transition);
+    flex-wrap: wrap;
+  }
+  .session-chip:active { background: var(--blue-dark); }
+  .session-chip .chip-label { font-weight: 800; color: var(--yellow-main); margin-right: 2px; }
+  .session-chip .chip-edit { margin-left: auto; color: var(--yellow-main); font-size: 16px; }
+
+  /* Pressure grid */
+  .pressure-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .pressure-cell {
+    background: var(--blue-soft);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    border: 2px solid transparent;
+    transition: border-color var(--transition);
+  }
+  .pressure-cell:focus-within { border-color: var(--blue-light); }
+  .pressure-cell .cell-label {
+    font-size: 11px; font-weight: 800; color: var(--blue-main);
+    text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .pressure-cell .cell-label .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue-main); }
+  .pressure-cell input {
+    width: 100%; border: none; background: transparent;
+    font-size: 22px; font-weight: 700; color: var(--blue-dark); outline: none; font-family: var(--font);
+  }
+  .pressure-cell input::placeholder { color: #b0bdd6; font-weight: 400; font-size: 18px; }
+  .pressure-cell .cell-unit { font-size: 12px; color: var(--grey-text); margin-top: 2px; }
+
+  /* Log list */
+  .log-list { display: flex; flex-direction: column; gap: 10px; }
+  .log-item {
+    background: var(--white);
+    border-radius: var(--radius-md);
+    border: 2px solid var(--grey-border);
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+  }
+  .log-item-header {
+    background: var(--blue-main); color: white;
+    padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .log-item-header .log-session-id { font-weight: 800; font-size: 15px; }
+  .log-item-header .log-badges { display: flex; gap: 6px; align-items: center; }
+  .badge {
+    background: rgba(255,255,255,0.2); color: white;
+    border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 700;
+  }
+  .badge.yellow { background: var(--yellow-main); color: var(--blue-dark); }
+  .log-item-body {
+    padding: 12px 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  .log-field { font-size: 13px; }
+  .log-field .lf-label { color: var(--grey-text); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .log-field .lf-val { font-weight: 600; color: var(--dark-text); margin-top: 1px; }
+  .log-field.full { grid-column: 1 / -1; }
+  .log-item-actions {
+    padding: 10px 14px; border-top: 1px solid var(--grey-border);
+    display: flex; justify-content: flex-end; gap: 8px;
+  }
+
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--grey-text); }
+  .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state p { font-size: 15px; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 30px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--dark-text); color: white;
+    padding: 13px 22px; border-radius: 30px; font-size: 14px; font-weight: 600;
+    z-index: 9999; transition: transform 0.3s ease, opacity 0.3s ease;
+    opacity: 0; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    display: flex; align-items: center; gap: 8px;
+    white-space: nowrap; pointer-events: none; max-width: 90vw;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  .toast.success { background: var(--success); }
+  .toast.error-t  { background: var(--danger); }
+  .toast.info   { background: var(--blue-main); }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(13,43,122,0.55);
+    z-index: 1000; display: flex; align-items: flex-end; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+  }
+  .modal-overlay.show { opacity: 1; pointer-events: all; }
+  .modal-box {
+    background: var(--white);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: 28px 24px 36px; width: 100%; max-width: 430px;
+    transform: translateY(60px); transition: transform 0.3s ease;
+    max-height: 90dvh; overflow-y: auto;
+  }
+  .modal-overlay.show .modal-box { transform: translateY(0); }
+  .modal-title { font-size: 19px; font-weight: 800; color: var(--blue-dark); margin-bottom: 10px; }
+  .modal-body { font-size: 15px; color: var(--grey-text); margin-bottom: 22px; line-height: 1.5; }
+  .modal-actions { display: flex; gap: 10px; }
+
+  /* Step indicator */
+  .step-indicator {
+    display: flex; justify-content: center; align-items: center;
+    gap: 8px; padding: 12px 0 4px; flex-shrink: 0; background: var(--blue-main);
+  }
+  .step-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: rgba(255,255,255,0.35); transition: all var(--transition);
+  }
+  .step-dot.active { background: var(--yellow-main); width: 24px; border-radius: 4px; }
+  .step-dot.done { background: rgba(255,255,255,0.7); }
+
+  .edit-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .edit-form-grid .full { grid-column: 1 / -1; }
+
+  /* Export bar */
+  .export-bar {
+    background: var(--yellow-light); border: 2px solid var(--yellow-main);
+    border-radius: var(--radius-md); padding: 12px 14px;
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+  }
+  .export-bar .export-info { font-size: 13px; color: var(--blue-dark); font-weight: 600; }
+  .export-bar .export-count { font-size: 22px; font-weight: 900; color: var(--blue-main); }
+
+  @media (max-height: 700px) {
+    .splash-logo-img, .splash-logo-placeholder { width: 110px; height: 110px; }
+    .splash-logo-wrap { padding: 24px 24px 20px; }
+    .splash-app-name { font-size: 22px; }
+  }
+</style>
+</head>
+
+<body>
+<div id="app">
+
+  <!-- ============================================================
+       SCREEN 1 — MECHANIC SELECTION
+  ============================================================ -->
+  <div id="screen1" class="screen active">
+    <div class="splash-logo-wrap">
+      <!-- Language selector top-right on splash -->
+      <div style="position:absolute;top:14px;right:14px;">
+        <div class="lang-selector" id="langBar1">
+          <button class="lang-btn active" onclick="setLang('en')">EN</button>
+          <button class="lang-btn" onclick="setLang('nl')">NL</button>
+          <button class="lang-btn" onclick="setLang('fr')">FR</button>
+        </div>
+      </div>
+
+      <img id="logoImg1" class="splash-logo-img" src="logo.png" alt="DAEMS Racing Logo"
+           onerror="this.style.display='none';document.getElementById('logoPlaceholder1').style.display='flex';" />
+      <div id="logoPlaceholder1" class="splash-logo-placeholder" style="display:none;">
+        <span>DRT</span><span>Racing</span>
+      </div>
+      <div class="splash-app-name">DRT <span>Tirepressures</span></div>
+      <div class="splash-tagline" id="splashTagline">Professional Kart Racing — Tire Data Logger</div>
+    </div>
+
+    <div class="step-indicator">
+      <div class="step-dot active"></div>
+      <div class="step-dot"></div>
+      <div class="step-dot"></div>
+    </div>
+
+    <div class="screen-body">
+      <div class="section-title" id="s1SectionTitle">Select Mechanic</div>
+      <div class="mechanic-list" id="mechanicList"></div>
+
+      <div class="add-mechanic-panel" id="addMechanicPanel">
+        <div class="form-group" style="margin-bottom:12px;">
+          <label class="form-label" id="lblNewMechanicName">New Mechanic Name</label>
+          <input type="text" id="newMechanicInput" class="form-control"
+                 placeholder="e.g. Jan de Vries" maxlength="40"
+                 autocomplete="off" autocorrect="off" spellcheck="false" />
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-primary btn-sm" id="btnSaveMechanic" onclick="saveNewMechanic()">✓ Save</button>
+          <button class="btn btn-outline btn-sm" id="btnCancelMechanic" onclick="toggleAddMechanic(false)">✕ Cancel</button>
+        </div>
+      </div>
+
+      <button class="btn btn-outline" id="btnAddMechanic" style="width:100%;margin-bottom:10px;" onclick="toggleAddMechanic(true)">
+        <span style="font-size:20px;line-height:1;">＋</span> <span id="btnAddMechanicText">Add New Mechanic</span>
+      </button>
+
+      <button class="btn btn-outline btn-sm" id="editMechanicsBtn"
+              style="width:100%;color:var(--grey-text);border-color:var(--grey-border);"
+              onclick="toggleEditMechanics()">
+        ✎ Manage / Remove Mechanics
+      </button>
+
+      <div id="validationMsg1" class="error-msg" style="margin-top:10px;text-align:center;font-size:14px;">
+        ⚠ Please select a mechanic to continue.
+      </div>
+    </div>
+
+    <div class="bottom-actions">
+      <button class="btn btn-accent" id="btnContinueS1" onclick="goToScreen2()">
+        Continue → Session Info
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SCREEN 2 — SESSION INFORMATION
+  ============================================================ -->
+  <div id="screen2" class="screen">
+    <div class="app-header">
+      <div class="header-left">
+        <button class="back-btn" onclick="goToScreen(1)">‹</button>
+        <div>
+          <div class="header-title" id="s2HeaderTitle">Session Info</div>
+          <div class="header-subtitle" id="s2mechLabel">Mechanic: —</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <img src="logo.png" id="logoMini2" style="height:34px;width:34px;object-fit:contain;border-radius:50%;background:white;padding:2px;border:2px solid var(--yellow-main);" onerror="this.style.display='none'" />
+        <div class="lang-selector" id="langBar2">
+          <button class="lang-btn" onclick="setLang('en')">EN</button>
+          <button class="lang-btn" onclick="setLang('nl')">NL</button>
+          <button class="lang-btn" onclick="setLang('fr')">FR</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-indicator">
+      <div class="step-dot done"></div>
+      <div class="step-dot active"></div>
+      <div class="step-dot"></div>
+    </div>
+
+    <div class="screen-body">
+      <div class="info-badge" id="s2InfoBadge">
+        ℹ️ Enter session details once — they will carry forward for all tire entries.
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="fieldDate" id="lblDate">Date <span class="required">*</span></label>
+        <input type="date" id="fieldDate" class="form-control" />
+        <div class="error-msg" id="errDate">Please select a date.</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="fieldCircuit" id="lblCircuit">Circuit <span class="required">*</span></label>
+        <div class="autocomplete-wrap">
+          <input type="text" id="fieldCircuit" class="form-control" placeholder="e.g. Genk, Lonato, PFI"
+                 autocomplete="off" autocorrect="off" spellcheck="false"
+                 oninput="acFilter('circuit',this.value)"
+                 onfocus="acFilter('circuit',this.value)"
+                 onblur="acBlur('circuit')" />
+          <div class="autocomplete-list" id="acCircuit"></div>
+        </div>
+        <div class="error-msg" id="errCircuit">Please enter a circuit.</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="fieldCategory" id="lblCategory">Category <span class="required">*</span></label>
+        <select id="fieldCategory" class="form-control" onchange="onCategoryChange()">
+          <option value="" id="catDefault">— Select Category —</option>
+          <option value="Mini">Mini</option>
+          <option value="Junior">Junior</option>
+          <option value="Senior">Senior</option>
+          <option value="DD2">DD2</option>
+          <option value="Other" id="catOther">Other…</option>
+        </select>
+        <div class="error-msg" id="errCategory">Please select a category.</div>
+      </div>
+
+      <div class="form-group" id="customCategoryGroup" style="display:none;">
+        <label class="form-label" for="fieldCustomCategory" id="lblCustomCat">Custom Category <span class="required">*</span></label>
+        <input type="text" id="fieldCustomCategory" class="form-control"
+               placeholder="Type custom category"
+               autocomplete="off" autocorrect="off" spellcheck="false" />
+        <div class="error-msg" id="errCustomCategory">Please enter a custom category.</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="fieldDriver" id="lblDriver">Driver <span class="required">*</span></label>
+        <div class="autocomplete-wrap">
+          <input type="text" id="fieldDriver" class="form-control" placeholder="e.g. Max Verstappen"
+                 autocomplete="off" autocorrect="off" spellcheck="false"
+                 oninput="acFilter('driver',this.value)"
+                 onfocus="acFilter('driver',this.value)"
+                 onblur="acBlur('driver')" />
+          <div class="autocomplete-list" id="acDriver"></div>
+        </div>
+        <div class="error-msg" id="errDriver">Please enter a driver name.</div>
+      </div>
+    </div>
+
+    <div class="bottom-actions">
+      <button class="btn btn-primary" id="btnContinueS2" onclick="goToScreen3()">
+        Continue → Data Entry
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SCREEN 3 — TIRE PRESSURE DATA ENTRY
+  ============================================================ -->
+  <div id="screen3" class="screen">
+    <div class="app-header">
+      <div class="header-left">
+        <button class="back-btn" onclick="goToScreen(2)">‹</button>
+        <div>
+          <div class="header-title" id="s3HeaderTitle">Tire Pressures</div>
+          <div class="header-subtitle" id="s3subtitle">— / —</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <img src="logo.png" id="logoMini3" style="height:34px;width:34px;object-fit:contain;border-radius:50%;background:white;padding:2px;border:2px solid var(--yellow-main);" onerror="this.style.display='none'" />
+        <div class="lang-selector" id="langBar3">
+          <button class="lang-btn" onclick="setLang('en')">EN</button>
+          <button class="lang-btn" onclick="setLang('nl')">NL</button>
+          <button class="lang-btn" onclick="setLang('fr')">FR</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-indicator">
+      <div class="step-dot done"></div>
+      <div class="step-dot done"></div>
+      <div class="step-dot active"></div>
+    </div>
+
+    <!-- Tab bar -->
+    <div style="display:flex;background:var(--white);border-bottom:2px solid var(--grey-border);flex-shrink:0;">
+      <button id="tabEntry" class="btn-icon"
+              style="flex:1;padding:14px 8px;font-size:14px;font-weight:700;color:var(--blue-main);border-bottom:3px solid var(--blue-main);border-radius:0;border-right:1px solid var(--grey-border);"
+              onclick="switchTab('entry')">
+        <span id="tabEntryText">＋ New Entry</span>
+      </button>
+      <button id="tabLog" class="btn-icon"
+              style="flex:1;padding:14px 8px;font-size:14px;font-weight:700;color:var(--grey-text);border-bottom:3px solid transparent;border-radius:0;"
+              onclick="switchTab('log')">
+        <span id="tabLogText">📋 View Log</span>
+        <span id="logCountBadge" style="background:var(--yellow-main);color:var(--blue-dark);border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px;"></span>
+      </button>
+    </div>
+
+    <!-- ENTRY PANEL -->
+    <div id="entryPanel" class="screen-body">
+
+      <div class="session-chip" onclick="goToScreen(2)">
+        <span>📅</span>
+        <span><span class="chip-label" id="chipLabelDate">Date:</span><span id="chipDate">—</span></span>
+        <span style="color:rgba(255,255,255,0.5)">|</span>
+        <span><span class="chip-label" id="chipLabelDriver">Driver:</span><span id="chipDriver">—</span></span>
+        <span class="chip-edit">✎</span>
+      </div>
+      <div class="session-chip" style="margin-top:-6px;background:var(--blue-dark);cursor:default;">
+        <span>🏁</span>
+        <span><span class="chip-label" id="chipLabelCircuit">Circuit:</span><span id="chipCircuit">—</span></span>
+        <span style="color:rgba(255,255,255,0.5)">|</span>
+        <span><span class="chip-label" id="chipLabelCat">Cat:</span><span id="chipCat">—</span></span>
+      </div>
+
+      <!-- Session ID -->
+      <div class="form-group">
+        <label class="form-label" for="fieldSession" id="lblSessionId">Session ID <span class="required">*</span></label>
+        <input type="text" id="fieldSession" class="form-control"
+               placeholder="e.g. Practice 1 or 1"
+               autocomplete="off" autocorrect="off" spellcheck="false"
+               style="font-size:18px;font-weight:700;" />
+        <div class="error-msg" id="errSession">Please enter a session identifier.</div>
+      </div>
+
+      <!-- Track Conditions -->
+      <div class="form-group">
+        <label class="form-label" id="lblTrackCond">Track Conditions <span class="required">*</span></label>
+        <div class="toggle-group">
+          <button class="toggle-option active" id="toggleDry" onclick="setTrackCondition('Dry')">☀️ Dry</button>
+          <button class="toggle-option wet" id="toggleWet" onclick="setTrackCondition('Wet')">🌧️ Wet</button>
+        </div>
+      </div>
+
+      <!-- Type of Session -->
+      <div class="form-group">
+        <label class="form-label" for="fieldSessionType" id="lblSessionType">Type of Session <span class="required">*</span></label>
+        <select id="fieldSessionType" class="form-control">
+          <option value="" id="sessionTypeDefault">— Select Type —</option>
+          <option value="Practice">Practice</option>
+          <option value="Quali">Qualifying</option>
+          <option value="Heats">Heats</option>
+          <option value="Superheat">Superheat</option>
+          <option value="Final">Final</option>
+        </select>
+        <div class="error-msg" id="errSessionType">Please select a session type.</div>
+      </div>
+
+      <!-- Lowest Tire Pressure -->
+      <div class="section-title" id="titleLowestPressure">🔵 Lowest Tire Pressure</div>
+      <div class="pressure-grid">
+        <div class="pressure-cell">
+          <div class="cell-label" id="labelLowestPressure">
+            <span class="dot" style="background:var(--blue-main)"></span>
+            Lowest Tire Pressure
+          </div>
+          <input type="number" id="pLowest" placeholder="0.00" step="0.01" min="0" max="3" inputmode="decimal" />
+          <div class="cell-unit">bar</div>
+        </div>
+      </div>
+
+      <!-- Rim Temperature -->
+      <div class="section-title" id="titleRimTemp">🌡️ Rim Temperature</div>
+      <div class="pressure-grid">
+        <div class="pressure-cell" style="background:#fff3cd;border-color:var(--yellow-main);">
+          <div class="cell-label" id="labelRimTemp" style="color:var(--yellow-dark);">
+            <span class="dot" style="background:var(--yellow-dark)"></span>
+            Rim Temperature
+          </div>
+          <input type="number" id="tRim" placeholder="0" step="0.1" min="-20" max="200"
+                 inputmode="decimal" style="color:var(--yellow-dark);" />
+          <div class="cell-unit">°C</div>
+        </div>
+      </div>
+
+  <!-- Hot Tire Pressure -->
+      <div class="section-title" id="titleHotPressure">🔴 Hot Tire Pressure</div>
+      <div class="pressure-grid">
+        <div class="pressure-cell" style="background:#fee2e2;">
+          <div class="cell-label" id="labelHotPressure" style="color:#b91c1c;">
+            <span class="dot" style="background:#dc2626"></span>
+            Hot Tire Pressure
+          </div>
+          <input type="number" id="pHot" placeholder="0.00" step="0.01" min="0" max="3"
+                 inputmode="decimal" style="color:#b91c1c;" />
+          <div class="cell-unit">bar</div>
+        </div>
+      </div>
+
+      <!-- Comments -->
+      <div class="section-title" id="titleNotes">📝 Notes</div>
+      <div class="form-group">
+        <textarea id="fieldComments" class="form-control" rows="3"
+                  placeholder="e.g. Driver reports understeer, new tires…"
+                  style="resize:none;"></textarea>
+      </div>
+
+      <div id="errEntry" class="error-msg" style="font-size:14px;text-align:center;margin-bottom:10px;">
+        ⚠ Please fill in all required fields.
+      </div>
+    </div>
+
+    <!-- LOG PANEL -->
+    <div id="logPanel" class="screen-body" style="display:none;">
+      <div class="export-bar">
+        <div>
+          <div class="export-info" id="lblTotalEntries">Total Entries</div>
+          <div class="export-count" id="exportCount">0</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+          <button class="btn btn-primary btn-sm" id="btnExportXlsx" onclick="exportExcel()">⬇ Export .xlsx</button>
+          <button class="btn btn-outline btn-sm" id="btnClearAll"
+                  style="font-size:12px;" onclick="clearAllEntries()">🗑 Clear All</button>
+        </div>
+      </div>
+      <div id="logList" class="log-list"></div>
+    </div>
+
+    <div class="bottom-actions" id="entryActions">
+      <button class="btn btn-accent" id="btnSaveEntry" onclick="saveEntry()" style="font-size:17px;">
+        💾 Save Entry
+      </button>
+    </div>
+    <div class="bottom-actions" id="logActions" style="display:none;">
+      <button class="btn btn-primary" id="btnNewEntryLog" onclick="switchTab('entry')">＋ New Entry</button>
+      <button class="btn btn-outline" id="btnExportLog" onclick="exportExcel()">⬇ Export</button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MODAL — CONFIRM DELETE
+  ============================================================ -->
+  <div class="modal-overlay" id="deleteModal">
+    <div class="modal-box">
+      <div class="modal-title" id="deleteModalTitle">⚠️ Delete Entry?</div>
+      <div class="modal-body" id="deleteModalBody">Are you sure you want to delete this entry?</div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" id="btnDeleteCancel" style="flex:1;" onclick="closeModal('deleteModal')">Cancel</button>
+        <button class="btn btn-danger" id="btnDeleteConfirm" style="flex:1;" onclick="confirmDelete()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MODAL — EDIT ENTRY
+  ============================================================ -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal-box">
+      <div class="modal-title" id="editModalTitle">✏️ Edit Entry</div>
+      <div class="edit-form-grid" id="editFormContent"></div>
+      <br>
+      <div class="modal-actions">
+        <button class="btn btn-outline" id="btnEditCancel" style="flex:1;" onclick="closeModal('editModal')">Cancel</button>
+        <button class="btn btn-primary" id="btnEditSave" style="flex:1;" onclick="saveEdit()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MODAL — CONFIRM CLEAR ALL
+  ============================================================ -->
+  <div class="modal-overlay" id="clearAllModal">
+    <div class="modal-box">
+      <div class="modal-title" id="clearAllModalTitle">⚠️ Clear All Entries?</div>
+      <div class="modal-body" id="clearAllModalBody">This will permanently delete ALL entries and cannot be undone.</div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" id="btnClearAllCancel" style="flex:1;" onclick="closeModal('clearAllModal')">Cancel</button>
+        <button class="btn btn-danger" id="btnClearAllConfirm" style="flex:1;" onclick="confirmClearAll()">Clear All</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ================================================================
+   STORAGE KEYS
+================================================================ */
+const KEYS = {
+  mechanics:      'drt_mechanics',
+  lastMechanic:   'drt_lastMechanic',
+  circuits:       'drt_circuits',
+  drivers:        'drt_drivers',
+  entries:        'drt_entries',
+  session:        'drt_session',
+  lastTrackCond:  'drt_lastTrackCond',
+  lastSessionType:'drt_lastSessionType',
+  lang:           'drt_lang',
+};
+
+let state = {
+  mechanics:        [],
+  selectedMechanic: null,
+  editMechanicsMode:false,
+  session:          { date:'', circuit:'', category:'', customCategory:'', driver:'' },
+  entries:          [],
+  trackCondition:   'Dry',
+  pendingDeleteId:  null,
+  pendingEditId:    null,
+  activeTab:        'entry',
+};
+
+/* ================================================================
+   LOCALSTORAGE HELPERS
+================================================================ */
+function load(key, fallback) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+  catch(e) { return fallback; }
+}
+function save(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
+}
+
+/* ================================================================
+   UTILITY
+================================================================ */
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+}
+function escapeHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escapeStr(s) {
+  if (!s) return '';
+  return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+}
+function formatDate(d) {
+  if (!d) return '—';
+  const [y,m,day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+/* ================================================================
+   TOAST
+================================================================ */
+let toastTimer;
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.className = 'toast ' + type;
+  const icons = { success:'✅ ', error_t:'❌ ', info:'ℹ️ ' };
+  t.textContent = (icons[type]||'') + msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+/* ================================================================
+   MODAL
+================================================================ */
+function openModal(id) {
+  document.getElementById(id).classList.add('show');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', function(e) {
+    if (e.target === this) closeModal(this.id);
+  });
+});
+
+/* ================================================================
+   TRANSLATIONS
+================================================================ */
+const TRANSLATIONS = {
+  en: {
+    appTagline:            'Professional Kart Racing — Tire Data Logger',
+    selectMechanic:        'Select Mechanic',
+    noMechanics:           'No mechanics yet.<br>Add your first mechanic below.',
+    addNewMechanic:        'Add New Mechanic',
+    manageMechanics:       '✎ Manage / Remove Mechanics',
+    doneMechanics:         '✓ Done Managing',
+    newMechanicName:       'New Mechanic Name',
+    newMechanicPlaceholder:'e.g. Jan de Vries',
+    saveLbl:               '✓ Save',
+    cancelLbl:             '✕ Cancel',
+    validationMechanic:    '⚠ Please select a mechanic to continue.',
+    continueSession:       'Continue → Session Info',
+    sessionInfo:           'Session Info',
+    mechanicLbl:           'Mechanic',
+    infoSessionBadge:      'ℹ️ Enter session details once — they will carry forward for all tire entries.',
+    dateLbl:               'Date',
+    circuitLbl:            'Circuit',
+    circuitPh:             'e.g. Genk, Lonato, PFI',
+    categoryLbl:           'Category',
+    categoryDefault:       '— Select Category —',
+    customCategoryLbl:     'Custom Category',
+    customCategoryPh:      'Type custom category',
+    driverLbl:             'Driver',
+    driverPh:              'e.g. Max Verstappen',
+    continueData:          'Continue → Data Entry',
+    tirePressures:         'Tire Pressures',
+    newEntry:              '＋ New Entry',
+    viewLog:               '📋 View Log',
+    chipDate:              'Date:',
+    chipDriver:            'Driver:',
+    chipCircuit:           'Circuit:',
+    chipCat:               'Cat:',
+    sessionIdLbl:          'Session ID',
+    sessionIdPh:           'e.g. Practice 1 or 1',
+    trackCondLbl:          'Track Conditions',
+    dryLbl:                '☀️ Dry',
+    wetLbl:                '🌧️ Wet',
+    sessionTypeLbl:        'Type of Session',
+    sessionTypeDefault:    '— Select Type —',
+    lowestPressureTitle:   '🔵 Lowest Tire Pressure',
+    lowestPressureLabel:   'Lowest Tire Pressure',
+    hotPressureTitle:      '🔴 Hot Tire Pressure',
+    hotPressureLabel:      'Hot Tire Pressure',
+    rimTempTitle:          '🌡️ Rim Temperature',
+    rimTempLabel:          'Rim Temperature',
+    notesTitle:            '📝 Notes',
+    notesPh:               'e.g. Driver reports understeer, new tires, changed rear pressure after 3 laps…',
+    requiredFields:        '⚠ Please fill in all required fields.',
+    saveEntry:             '💾 Save Entry',
+    totalEntries:          'Total Entries',
+    exportXlsx:            '⬇ Export .xlsx',
+    clearAll:              '🗑 Clear All',
+    logMechanic:           'Mechanic',
+    logDate:               'Date',
+    logCircuit:            'Circuit',
+    logCategory:           'Category',
+    logDriver:             'Driver',
+    logSessionType:        'Type',
+    logLowest:             'Lowest Pressure',
+    logHot:                'Hot Pressure',
+    logRimTemp:            'Rim Temp',
+    logComments:           'Comments',
+    editBtn:               '✏️ Edit',
+    deleteBtn:             '🗑️ Delete',
+    emptyLog:              'No entries yet.<br>Save your first tire pressure reading!',
+    exportBtn:             '⬇ Export',
+    newEntryBtn:           '＋ New Entry',
+    deleteModalTitle:      '⚠️ Delete Entry?',
+    deleteModalPre:        'Are you sure you want to delete the entry for',
+    deleteModalPost:       '? This cannot be undone.',
+    deleteCancel:          'Cancel',
+    deleteConfirm:         'Delete',
+    editModalTitle:        '✏️ Edit Entry',
+    editSessionId:         'Session ID',
+    editTrackCond:         'Track Conditions',
+    editSessionType:       'Type of Session',
+    editLowest:            'Lowest Pressure (bar)',
+    editHot:               'Hot Pressure (bar)',
+    editRimTemp:           'Rim Temp (°C)',
+    editComments:          'Comments',
+    editCancel:            'Cancel',
+    editSave:              'Save Changes',
+    clearAllTitle:         '⚠️ Clear All Entries?',
+    clearAllBody:          'This will permanently delete ALL entries and cannot be undone.',
+    clearAllCancel:        'Cancel',
+    clearAllConfirm:       'Clear All',
+    toastSaved:            'Entry saved successfully!',
+    toastDeleted:          'Entry deleted.',
+    toastUpdated:          'Entry updated!',
+    toastExported:         'Excel file downloaded!',
+    toastNoExport:         'No entries to export.',
+    toastCleared:          'All entries cleared.',
+    toastAdded:            'added!',
+    toastRemoved:          'removed.',
+    toastExists:           'Mechanic already exists.',
+    toastEnterName:        'Please enter a name.',
+    errDate:               'Please select a date.',
+    errCircuit:            'Please enter a circuit.',
+    errCategory:           'Please select a category.',
+    errCustomCat:          'Please enter a custom category.',
+    errDriver:             'Please enter a driver name.',
+    errSession:            'Please enter a session identifier.',
+    errSessionType:        'Please select a session type.',
+    removeMechanicConfirm: 'Remove "%s" from the list? Their logged entries will be kept.',
+    sessionLbl:            'Session:',
+    dryText:               'Dry',
+    wetText:               'Wet',
+  },
+  nl: {
+    appTagline:            'Professioneel Kart Racen — Bandendruk Logger',
+    selectMechanic:        'Selecteer Monteur',
+    noMechanics:           'Nog geen monteurs.<br>Voeg hieronder uw eerste monteur toe.',
+    addNewMechanic:        'Nieuwe Monteur Toevoegen',
+    manageMechanics:       '✎ Beheren / Monteurs Verwijderen',
+    doneMechanics:         '✓ Klaar',
+    newMechanicName:       'Naam Nieuwe Monteur',
+    newMechanicPlaceholder:'bv. Jan de Vries',
+    saveLbl:               '✓ Opslaan',
+    cancelLbl:             '✕ Annuleren',
+    validationMechanic:    '⚠ Selecteer een monteur om verder te gaan.',
+    continueSession:       'Verder → Sessie-info',
+    sessionInfo:           'Sessie-info',
+    mechanicLbl:           'Monteur',
+    infoSessionBadge:      'ℹ️ Vul sessiegegevens eenmalig in — ze worden overgenomen voor alle bandendrukregistraties.',
+    dateLbl:               'Datum',
+    circuitLbl:            'Circuit',
+    circuitPh:             'bv. Genk, Lonato, PFI',
+    categoryLbl:           'Categorie',
+    categoryDefault:       '— Selecteer Categorie —',
+    customCategoryLbl:     'Aangepaste Categorie',
+    customCategoryPh:      'Typ aangepaste categorie',
+    driverLbl:             'Rijder',
+    driverPh:              'bv. Max Verstappen',
+    continueData:          'Verder → Gegevensinvoer',
+    tirePressures:         'Bandendrukken',
+    newEntry:              '＋ Nieuwe Invoer',
+    viewLog:               '📋 Bekijk Log',
+    chipDate:              'Datum:',
+    chipDriver:            'Rijder:',
+    chipCircuit:           'Circuit:',
+    chipCat:               'Cat:',
+    sessionIdLbl:          'Sessie ID',
+    sessionIdPh:           'bv. Training 1 of 1',
+    trackCondLbl:          'Baancondities',
+    dryLbl:                '☀️ Droog',
+    wetLbl:                '🌧️ Nat',
+    sessionTypeLbl:        'Type Sessie',
+    sessionTypeDefault:    '— Selecteer Type —',
+    lowestPressureTitle:   '🔵 Laagste Bandendruk',
+    lowestPressureLabel:   'Laagste Bandendruk',
+    hotPressureTitle:      '🔴 Warme Bandendruk',
+    hotPressureLabel:      'Warme Bandendruk',
+    rimTempTitle:          '🌡️ Velgtemperatuur',
+    rimTempLabel:          'Velgtemperatuur',
+    notesTitle:            '📝 Notities',
+    notesPh:               'bv. Rijder meldt onderstuur, nieuwe banden, achterdruk gewijzigd na 3 ronden…',
+    requiredFields:        '⚠ Vul alle verplichte velden in.',
+    saveEntry:             '💾 Opslaan',
+    totalEntries:          'Totaal Registraties',
+    exportXlsx:            '⬇ Exporteer .xlsx',
+    clearAll:              '🗑 Alles Wissen',
+    logMechanic:           'Monteur',
+    logDate:               'Datum',
+    logCircuit:            'Circuit',
+    logCategory:           'Categorie',
+    logDriver:             'Rijder',
+    logSessionType:        'Type',
+    logLowest:             'Laagste Druk',
+    logHot:                'Warme Druk',
+    logRimTemp:            'Velgtemp.',
+    logComments:           'Opmerkingen',
+    editBtn:               '✏️ Bewerken',
+    deleteBtn:             '🗑️ Verwijderen',
+    emptyLog:              'Nog geen registraties.<br>Sla uw eerste bandendrukwaarde op!',
+    exportBtn:             '⬇ Exporteer',
+    newEntryBtn:           '＋ Nieuwe Invoer',
+    deleteModalTitle:      '⚠️ Invoer Verwijderen?',
+    deleteModalPre:        'Weet u zeker dat u de invoer voor',
+    deleteModalPost:       'wilt verwijderen? Dit kan niet ongedaan worden gemaakt.',
+    deleteCancel:          'Annuleren',
+    deleteConfirm:         'Verwijderen',
+    editModalTitle:        '✏️ Invoer Bewerken',
+    editSessionId:         'Sessie ID',
+    editTrackCond:         'Baancondities',
+    editSessionType:       'Type Sessie',
+    editLowest:            'Laagste Druk (bar)',
+    editHot:               'Warme Druk (bar)',
+    editRimTemp:           'Velgtemp. (°C)',
+    editComments:          'Opmerkingen',
+    editCancel:            'Annuleren',
+    editSave:              'Wijzigingen Opslaan',
+    clearAllTitle:         '⚠️ Alle Invoer Wissen?',
+    clearAllBody:          'Dit verwijdert ALLE invoer permanent en kan niet ongedaan worden gemaakt.',
+    clearAllCancel:        'Annuleren',
+    clearAllConfirm:       'Alles Wissen',
+    toastSaved:            'Invoer succesvol opgeslagen!',
+    toastDeleted:          'Invoer verwijderd.',
+    toastUpdated:          'Invoer bijgewerkt!',
+    toastExported:         'Excel-bestand gedownload!',
+    toastNoExport:         'Geen invoer om te exporteren.',
+    toastCleared:          'Alle invoer gewist.',
+    toastAdded:            'toegevoegd!',
+    toastRemoved:          'verwijderd.',
+    toastExists:           'Monteur bestaat al.',
+    toastEnterName:        'Voer een naam in.',
+    errDate:               'Selecteer een datum.',
+    errCircuit:            'Voer een circuit in.',
+    errCategory:           'Selecteer een categorie.',
+    errCustomCat:          'Voer een aangepaste categorie in.',
+    errDriver:             'Voer een rijdersnaam in.',
+    errSession:            'Voer een sessie-identificatie in.',
+    errSessionType:        'Selecteer een sessietype.',
+    removeMechanicConfirm: '"%s" van de lijst verwijderen? De geregistreerde gegevens worden bewaard.',
+    sessionLbl:            'Sessie:',
+    dryText:               'Droog',
+    wetText:               'Nat',
+  },
+  fr: {
+    appTagline:            'Karting Professionnel — Enregistreur de Pression de Pneus',
+    selectMechanic:        'Sélectionner Mécanicien',
+    noMechanics:           'Aucun mécanicien.<br>Ajoutez le premier mécanicien ci-dessous.',
+    addNewMechanic:        'Ajouter Mécanicien',
+    manageMechanics:       '✎ Gérer / Supprimer Mécaniciens',
+    doneMechanics:         '✓ Terminé',
+    newMechanicName:       'Nom du Nouveau Mécanicien',
+    newMechanicPlaceholder:'ex. Jean Dupont',
+    saveLbl:               '✓ Enregistrer',
+    cancelLbl:             '✕ Annuler',
+    validationMechanic:    '⚠ Veuillez sélectionner un mécanicien pour continuer.',
+    continueSession:       'Continuer → Infos Session',
+    sessionInfo:           'Infos Session',
+    mechanicLbl:           'Mécanicien',
+    infoSessionBadge:      'ℹ️ Saisissez les détails de session une fois — ils seront repris pour toutes les entrées de pression.',
+    dateLbl:               'Date',
+    circuitLbl:            'Circuit',
+    circuitPh:             'ex. Genk, Lonato, PFI',
+    categoryLbl:           'Catégorie',
+    categoryDefault:       '— Sélectionner Catégorie —',
+    customCategoryLbl:     'Catégorie Personnalisée',
+    customCategoryPh:      'Saisir catégorie personnalisée',
+    driverLbl:             'Pilote',
+    driverPh:              'ex. Max Verstappen',
+    continueData:          'Continuer → Saisie Données',
+    tirePressures:         'Pressions de Pneus',
+    newEntry:              '＋ Nouvelle Entrée',
+    viewLog:               '📋 Voir Journal',
+    chipDate:              'Date :',
+    chipDriver:            'Pilote :',
+    chipCircuit:           'Circuit :',
+    chipCat:               'Cat :',
+    sessionIdLbl:          'ID Session',
+    sessionIdPh:           'ex. Essai 1 ou 1',
+    trackCondLbl:          'Conditions de Piste',
+    dryLbl:                '☀️ Sec',
+    wetLbl:                '🌧️ Mouillé',
+    sessionTypeLbl:        'Type de Session',
+    sessionTypeDefault:    '— Sélectionner Type —',
+    lowestPressureTitle:   '🔵 Pression la Plus Basse',
+    lowestPressureLabel:   'Pression la Plus Basse',
+    hotPressureTitle:      '🔴 Pression à Chaud',
+    hotPressureLabel:      'Pression à Chaud',
+    rimTempTitle:          '🌡️ Température de Jante',
+    rimTempLabel:          'Température de Jante',
+    notesTitle:            '📝 Notes',
+    notesPh:               'ex. Le pilote signale du sous-virage, pneus neufs, pression arrière modifiée après 3 tours…',
+    requiredFields:        '⚠ Veuillez remplir tous les champs obligatoires.',
+    saveEntry:             '💾 Enregistrer',
+    totalEntries:          'Total des Entrées',
+    exportXlsx:            '⬇ Exporter .xlsx',
+    clearAll:              '🗑 Tout Effacer',
+    logMechanic:           'Mécanicien',
+    logDate:               'Date',
+    logCircuit:            'Circuit',
+    logCategory:           'Catégorie',
+    logDriver:             'Pilote',
+    logSessionType:        'Type',
+    logLowest:             'Pression Min.',
+    logHot:                'Pression Chaude',
+    logRimTemp:            'Temp. Jante',
+    logComments:           'Commentaires',
+    editBtn:               '✏️ Modifier',
+    deleteBtn:             '🗑️ Supprimer',
+    emptyLog:              'Aucune entrée.<br>Enregistrez votre première pression de pneu !',
+    exportBtn:             '⬇ Exporter',
+    newEntryBtn:           '＋ Nouvelle Entrée',
+    deleteModalTitle:      '⚠️ Supprimer l\'entrée ?',
+    deleteModalPre:        'Êtes-vous sûr de vouloir supprimer l\'entrée pour',
+    deleteModalPost:       '? Cette action est irréversible.',
+    deleteCancel:          'Annuler',
+    deleteConfirm:         'Supprimer',
+    editModalTitle:        '✏️ Modifier l\'Entrée',
+    editSessionId:         'ID Session',
+    editTrackCond:         'Conditions de Piste',
+    editSessionType:       'Type de Session',
+    editLowest:            'Pression Min. (bar)',
+    editHot:               'Pression Chaude (bar)',
+    editRimTemp:           'Temp. Jante (°C)',
+    editComments:          'Commentaires',
+    editCancel:            'Annuler',
+    editSave:              'Sauvegarder',
+    clearAllTitle:         '⚠️ Effacer Toutes les Entrées ?',
+    clearAllBody:          'Ceci supprimera définitivement TOUTES les entrées et ne peut pas être annulé.',
+    clearAllCancel:        'Annuler',
+    clearAllConfirm:       'Tout Effacer',
+    toastSaved:            'Entrée enregistrée avec succès !',
+    toastDeleted:          'Entrée supprimée.',
+    toastUpdated:          'Entrée mise à jour !',
+    toastExported:         'Fichier Excel téléchargé !',
+    toastNoExport:         'Aucune entrée à exporter.',
+    toastCleared:          'Toutes les entrées effacées.',
+    toastAdded:            'ajouté !',
+    toastRemoved:          'supprimé.',
+    toastExists:           'Mécanicien déjà existant.',
+    toastEnterName:        'Veuillez saisir un nom.',
+    errDate:               'Veuillez sélectionner une date.',
+    errCircuit:            'Veuillez saisir un circuit.',
+    errCategory:           'Veuillez sélectionner une catégorie.',
+    errCustomCat:          'Veuillez saisir une catégorie personnalisée.',
+    errDriver:             'Veuillez saisir le nom du pilote.',
+    errSession:            'Veuillez saisir un identifiant de session.',
+    errSessionType:        'Veuillez sélectionner un type de session.',
+    removeMechanicConfirm: 'Retirer "%s" de la liste ? Les données enregistrées seront conservées.',
+    sessionLbl:            'Session :',
+    dryText:               'Sec',
+    wetText:               'Mouillé',
+  }
+};
+
+let currentLang = load(KEYS.lang, 'en');
+
+function t(key) {
+  return (TRANSLATIONS[currentLang] && TRANSLATIONS[currentLang][key] !== undefined)
+    ? TRANSLATIONS[currentLang][key]
+    : (TRANSLATIONS['en'][key] || key);
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  save(KEYS.lang, lang);
+  // Update all lang buttons
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent.trim().toLowerCase() === lang);
+  });
+  applyTranslations();
+}
+
+function applyTranslations() {
+  // Screen 1
+  document.getElementById('splashTagline').textContent       = t('appTagline');
+  document.getElementById('s1SectionTitle').textContent      = t('selectMechanic');
+  document.getElementById('lblNewMechanicName').textContent  = t('newMechanicName');
+  document.getElementById('newMechanicInput').placeholder    = t('newMechanicPlaceholder');
+  document.getElementById('btnSaveMechanic').textContent     = t('saveLbl');
+  document.getElementById('btnCancelMechanic').textContent   = t('cancelLbl');
+  document.getElementById('btnAddMechanicText').textContent  = t('addNewMechanic');
+  document.getElementById('editMechanicsBtn').textContent    = state.editMechanicsMode ? t('doneMechanics') : t('manageMechanics');
+  document.getElementById('validationMsg1').textContent      = t('validationMechanic');
+  document.getElementById('btnContinueS1').textContent       = t('continueSession');
+
+  // Screen 2
+  document.getElementById('s2HeaderTitle').textContent       = t('sessionInfo');
+  const s2mech = document.getElementById('s2mechLabel');
+  s2mech.textContent = t('mechanicLbl') + ': ' + (state.selectedMechanic || '—');
+  document.getElementById('s2InfoBadge').textContent         = t('infoSessionBadge');
+  document.getElementById('lblDate').innerHTML               = t('dateLbl') + ' <span class="required">*</span>';
+  document.getElementById('lblCircuit').innerHTML            = t('circuitLbl') + ' <span class="required">*</span>';
+  document.getElementById('fieldCircuit').placeholder        = t('circuitPh');
+  document.getElementById('lblCategory').innerHTML           = t('categoryLbl') + ' <span class="required">*</span>';
+  document.getElementById('catDefault').textContent          = t('categoryDefault');
+  document.getElementById('lblCustomCat').innerHTML          = t('customCategoryLbl') + ' <span class="required">*</span>';
+  document.getElementById('fieldCustomCategory').placeholder = t('customCategoryPh');
+  document.getElementById('lblDriver').innerHTML             = t('driverLbl') + ' <span class="required">*</span>';
+  document.getElementById('fieldDriver').placeholder         = t('driverPh');
+  document.getElementById('btnContinueS2').textContent       = t('continueData');
+  document.getElementById('errDate').textContent             = t('errDate');
+  document.getElementById('errCircuit').textContent          = t('errCircuit');
+  document.getElementById('errCategory').textContent         = t('errCategory');
+  document.getElementById('errCustomCategory').textContent   = t('errCustomCat');
+  document.getElementById('errDriver').textContent           = t('errDriver');
+
+  // Screen 3 header & tabs
+  document.getElementById('s3HeaderTitle').textContent       = t('tirePressures');
+  document.getElementById('tabEntryText').textContent        = t('newEntry');
+  document.getElementById('tabLogText').textContent          = t('viewLog');
+
+  // Chips
+  document.getElementById('chipLabelDate').textContent       = t('chipDate');
+  document.getElementById('chipLabelDriver').textContent     = t('chipDriver');
+  document.getElementById('chipLabelCircuit').textContent    = t('chipCircuit');
+  document.getElementById('chipLabelCat').textContent        = t('chipCat');
+
+  // Entry form
+  document.getElementById('lblSessionId').innerHTML          = t('sessionIdLbl') + ' <span class="required">*</span>';
+  document.getElementById('fieldSession').placeholder        = t('sessionIdPh');
+  document.getElementById('lblTrackCond').innerHTML          = t('trackCondLbl') + ' <span class="required">*</span>';
+  document.getElementById('toggleDry').textContent           = t('dryLbl');
+  document.getElementById('toggleWet').textContent           = t('wetLbl');
+  document.getElementById('lblSessionType').innerHTML        = t('sessionTypeLbl') + ' <span class="required">*</span>';
+  document.getElementById('sessionTypeDefault').textContent  = t('sessionTypeDefault');
+  document.getElementById('errSession').textContent          = t('errSession');
+  document.getElementById('errSessionType').textContent      = t('errSessionType');
+  document.getElementById('errEntry').textContent            = t('requiredFields');
+
+  // Section titles & cell labels
+  document.getElementById('titleLowestPressure').textContent = t('lowestPressureTitle');
+  document.getElementById('labelLowestPressure').innerHTML   = `<span class="dot" style="background:var(--blue-main)"></span>${t('lowestPressureLabel')}`;
+  document.getElementById('titleHotPressure').textContent    = t('hotPressureTitle');
+  document.getElementById('labelHotPressure').innerHTML      = `<span class="dot" style="background:#dc2626"></span>${t('hotPressureLabel')}`;
+  document.getElementById('titleRimTemp').textContent        = t('rimTempTitle');
+  document.getElementById('labelRimTemp').innerHTML          = `<span class="dot" style="background:var(--yellow-dark)"></span>${t('rimTempLabel')}`;
+  document.getElementById('titleNotes').textContent          = t('notesTitle');
+  document.getElementById('fieldComments').placeholder       = t('notesPh');
+
+  // Save button
+  document.getElementById('btnSaveEntry').textContent        = t('saveEntry');
+
+  // Log panel
+  document.getElementById('lblTotalEntries').textContent     = t('totalEntries');
+  document.getElementById('btnExportXlsx').textContent       = t('exportXlsx');
+  document.getElementById('btnClearAll').textContent         = t('clearAll');
+  document.getElementById('btnNewEntryLog').textContent      = t('newEntryBtn');
+  document.getElementById('btnExportLog').textContent        = t('exportBtn');
+
+  // Modals
+  document.getElementById('deleteModalTitle').textContent    = t('deleteModalTitle');
+  document.getElementById('btnDeleteCancel').textContent     = t('deleteCancel');
+  document.getElementById('btnDeleteConfirm').textContent    = t('deleteConfirm');
+  document.getElementById('editModalTitle').textContent      = t('editModalTitle');
+  document.getElementById('btnEditCancel').textContent       = t('editCancel');
+  document.getElementById('btnEditSave').textContent         = t('editSave');
+  document.getElementById('clearAllModalTitle').textContent  = t('clearAllTitle');
+  document.getElementById('clearAllModalBody').textContent   = t('clearAllBody');
+  document.getElementById('btnClearAllCancel').textContent   = t('clearAllCancel');
+  document.getElementById('btnClearAllConfirm').textContent  = t('clearAllConfirm');
+
+  // Re-render dynamic content
+  renderMechanicList();
+  if (state.activeTab === 'log') renderLog();
+  updateLogBadge();
+}
+
+/* ================================================================
+   LOGO INIT
+================================================================ */
+function initLogo() {
+  document.getElementById('logoImg1').src = 'logo.png';
+}
+
+/* ================================================================
+   INIT APP
+================================================================ */
+function init() {
+  initLogo();
+  state.mechanics       = load(KEYS.mechanics, []);
+  state.selectedMechanic= load(KEYS.lastMechanic, null);
+  state.entries         = load(KEYS.entries, []);
+  state.session         = load(KEYS.session, { date:'', circuit:'', category:'', customCategory:'', driver:'' });
+  state.trackCondition  = load(KEYS.lastTrackCond, 'Dry');
+
+  if (!state.session.date) {
+    state.session.date = new Date().toISOString().slice(0,10);
+  }
+
+  goToScreen(1);
+  setLang(currentLang); // applies translations + renders mechanic list
+}
+
+/* ================================================================
+   SCREEN NAVIGATION
+================================================================ */
+function goToScreen(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen' + n).classList.add('active');
+  const body = document.querySelector('#screen' + n + ' .screen-body');
+  if (body) body.scrollTop = 0;
+}
+
+/* ================================================================
+   SCREEN 1 — MECHANIC LOGIC
+================================================================ */
+function renderMechanicList() {
+  const list = document.getElementById('mechanicList');
+  if (!state.mechanics.length) {
+    list.innerHTML = `<div class="empty-state" style="padding:20px;">
+      <div class="empty-icon">👤</div>
+      <p>${t('noMechanics')}</p>
+    </div>`;
+    return;
+  }
+  list.innerHTML = state.mechanics.map(m => {
+    const safeId = btoa(encodeURIComponent(m)).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+    return `
+    <div class="mechanic-item ${state.selectedMechanic === m ? 'selected':''}"
+         onclick="selectMechanic('${escapeStr(m)}')">
+      <div class="mechanic-name">
+        <div class="avatar">${m.charAt(0).toUpperCase()}</div>
+        <span>${escapeHtml(m)}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="delete-mech-btn" style="display:${state.editMechanicsMode?'block':'none'};"
+                onclick="deleteMechanic(event,'${escapeStr(m)}')">🗑</button>
+        <span class="selected-check">✔</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectMechanic(name) {
+  state.selectedMechanic = name;
+  save(KEYS.lastMechanic, name);
+  renderMechanicList();
+  document.getElementById('validationMsg1').classList.remove('show');
+}
+
+function toggleAddMechanic(show) {
+  const panel = document.getElementById('addMechanicPanel');
+  if (show) {
+    panel.classList.add('show');
+    setTimeout(() => document.getElementById('newMechanicInput').focus(), 100);
+  } else {
+    panel.classList.remove('show');
+    document.getElementById('newMechanicInput').value = '';
+  }
+}
+
+function saveNewMechanic() {
+  const input = document.getElementById('newMechanicInput');
+  const name  = input.value.trim();
+  if (!name)                          { showToast(t('toastEnterName'), 'error_t'); return; }
+  if (state.mechanics.includes(name)) { showToast(t('toastExists'), 'error_t'); return; }
+  state.mechanics.push(name);
+  save(KEYS.mechanics, state.mechanics);
+  selectMechanic(name);
+  toggleAddMechanic(false);
+  showToast(`${name} ${t('toastAdded')}`, 'success');
+}
+
+function deleteMechanic(e, name) {
+  e.stopPropagation();
+  const msg = t('removeMechanicConfirm').replace('%s', name);
+  if (!confirm(msg)) return;
+  state.mechanics = state.mechanics.filter(m => m !== name);
+  save(KEYS.mechanics, state.mechanics);
+  if (state.selectedMechanic === name) {
+    state.selectedMechanic = state.mechanics[0] || null;
+    save(KEYS.lastMechanic, state.selectedMechanic);
+  }
+  renderMechanicList();
+  showToast(`${name} ${t('toastRemoved')}`, 'info');
+}
+
+function toggleEditMechanics() {
+  state.editMechanicsMode = !state.editMechanicsMode;
+  document.getElementById('editMechanicsBtn').textContent =
+    state.editMechanicsMode ? t('doneMechanics') : t('manageMechanics');
+  renderMechanicList();
+}
+
+function goToScreen2() {
+  if (!state.selectedMechanic) {
+    document.getElementById('validationMsg1').classList.add('show');
+    return;
+  }
+  document.getElementById('s2mechLabel').textContent = t('mechanicLbl') + ': ' + state.selectedMechanic;
+  renderScreen2Fields();
+  goToScreen(2);
+}
+
+document.getElementById('newMechanicInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') saveNewMechanic();
+});
+
+/* ================================================================
+   SCREEN 2 — SESSION INFO
+================================================================ */
+function renderScreen2Fields() {
+  const s = state.session;
+  document.getElementById('fieldDate').value = s.date || new Date().toISOString().slice(0,10);
+  document.getElementById('fieldCircuit').value = s.circuit || '';
+  document.getElementById('fieldDriver').value  = s.driver  || '';
+  const catSel = document.getElementById('fieldCategory');
+  if (['Mini','Junior','Senior','DD2','Other'].includes(s.category)) {
+    catSel.value = s.category;
+  } else if (s.category) {
+    catSel.value = 'Other';
+  } else {
+    catSel.value = '';
+  }
+  onCategoryChange();
+  if (catSel.value === 'Other') {
+    document.getElementById('fieldCustomCategory').value = s.customCategory || '';
+  }
+}
+
+function onCategoryChange() {
+  const val = document.getElementById('fieldCategory').value;
+  document.getElementById('customCategoryGroup').style.display = val === 'Other' ? 'block' : 'none';
+}
+
+function clearErrors2() {
+  const pairs = {
+    errDate:'fieldDate', errCircuit:'fieldCircuit',
+    errCategory:'fieldCategory', errCustomCategory:'fieldCustomCategory',
+    errDriver:'fieldDriver'
+  };
+  Object.entries(pairs).forEach(([err, field]) => {
+    document.getElementById(err).classList.remove('show');
+    document.getElementById(field).classList.remove('error');
+  });
+}
+
+function showErr(errId, fieldId) {
+  document.getElementById(errId).classList.add('show');
+  if (fieldId) document.getElementById(fieldId).classList.add('error');
+}
+
+function goToScreen3() {
+  const date       = document.getElementById('fieldDate').value;
+  const circuit    = document.getElementById('fieldCircuit').value.trim();
+  const category   = document.getElementById('fieldCategory').value;
+  const customCat  = document.getElementById('fieldCustomCategory').value.trim();
+  const driver     = document.getElementById('fieldDriver').value.trim();
+
+  clearErrors2();
+  let valid = true;
+  if (!date)                              { showErr('errDate','fieldDate'); valid = false; }
+  if (!circuit)                           { showErr('errCircuit','fieldCircuit'); valid = false; }
+  if (!category)                          { showErr('errCategory','fieldCategory'); valid = false; }
+  if (category === 'Other' && !customCat) { showErr('errCustomCategory','fieldCustomCategory'); valid = false; }
+  if (!driver)                            { showErr('errDriver','fieldDriver'); valid = false; }
+  if (!valid) return;
+
+  state.session = { date, circuit, category, customCategory: category === 'Other' ? customCat : '', driver };
+  save(KEYS.session, state.session);
+  addToHistory(KEYS.circuits, circuit);
+  addToHistory(KEYS.drivers, driver);
+
+  updateScreen3Summary();
+  setTrackCondition(state.trackCondition, false);
+  suggestSessionId();
+
+  const lastType = load(KEYS.lastSessionType, '');
+  if (lastType) document.getElementById('fieldSessionType').value = lastType;
+
+  goToScreen(3);
+  switchTab('entry');
+  renderLog();
+}
+
+function updateScreen3Summary() {
+  const s = state.session;
+  const catDisplay = s.category === 'Other' ? s.customCategory : s.category;
+  document.getElementById('chipDate').textContent    = formatDate(s.date);
+  document.getElementById('chipDriver').textContent  = s.driver;
+  document.getElementById('chipCircuit').textContent = s.circuit;
+  document.getElementById('chipCat').textContent     = catDisplay;
+  document.getElementById('s3subtitle').textContent  = `${s.circuit} — ${s.driver}`;
+}
+
+/* ================================================================
+   AUTOCOMPLETE
+================================================================ */
+function addToHistory(key, val) {
+  let arr = load(key, []);
+  arr = arr.filter(v => v.toLowerCase() !== val.toLowerCase());
+  arr.unshift(val);
+  arr = arr.slice(0, 30);
+  save(key, arr);
+}
+
+function acFilter(type, val) {
+  const keyMap    = { circuit: KEYS.circuits, driver: KEYS.drivers };
+  const listIdMap = { circuit: 'acCircuit',   driver: 'acDriver' };
+  const arr       = load(keyMap[type], []);
+  const filtered  = val.length === 0
+    ? arr.slice(0, 8)
+    : arr.filter(v => v.toLowerCase().includes(val.toLowerCase())).slice(0, 8);
+  const list = document.getElementById(listIdMap[type]);
+  if (!filtered.length) { list.classList.remove('show'); return; }
+  list.innerHTML = filtered.map(v =>
+    `<div class="autocomplete-item" onmousedown="acSelect('${type}','${escapeStr(v)}')">${escapeHtml(v)}</div>`
+  ).join('');
+  list.classList.add('show');
+}
+
+function acSelect(type, val) {
+  const fieldMap  = { circuit:'fieldCircuit', driver:'fieldDriver' };
+  const listIdMap = { circuit:'acCircuit',    driver:'acDriver' };
+  document.getElementById(fieldMap[type]).value = val;
+  document.getElementById(listIdMap[type]).classList.remove('show');
+}
+
+function acBlur(type) {
+  const listIdMap = { circuit:'acCircuit', driver:'acDriver' };
+  setTimeout(() => document.getElementById(listIdMap[type]).classList.remove('show'), 200);
+}
+
+/* ================================================================
+   SCREEN 3 — DATA ENTRY
+================================================================ */
+function setTrackCondition(cond, updateStorage = true) {
+  state.trackCondition = cond;
+  if (updateStorage) save(KEYS.lastTrackCond, cond);
+  document.getElementById('toggleDry').classList.toggle('active', cond === 'Dry');
+  document.getElementById('toggleWet').classList.toggle('active', cond === 'Wet');
+}
+
+function suggestSessionId() {
+  if (!state.entries.length) {
+    document.getElementById('fieldSession').value = '1';
+    return;
+  }
+  const lastSess = state.entries[state.entries.length - 1].session || '';
+  const num = parseInt(lastSess);
+  document.getElementById('fieldSession').value = !isNaN(num) ? String(num + 1) : lastSess + '_2';
+}
+
+function switchTab(tab) {
+  state.activeTab = tab;
+  const isEntry = tab === 'entry';
+  document.getElementById('entryPanel').style.display  = isEntry ? 'block' : 'none';
+  document.getElementById('logPanel').style.display    = isEntry ? 'none'  : 'block';
+  document.getElementById('entryActions').style.display= isEntry ? 'flex'  : 'none';
+  document.getElementById('logActions').style.display  = isEntry ? 'none'  : 'flex';
+
+  const tabEntry = document.getElementById('tabEntry');
+  const tabLog   = document.getElementById('tabLog');
+  tabEntry.style.color        = isEntry ? 'var(--blue-main)' : 'var(--grey-text)';
+  tabEntry.style.borderBottom = isEntry ? '3px solid var(--blue-main)' : '3px solid transparent';
+  tabLog.style.color          = isEntry ? 'var(--grey-text)' : 'var(--blue-main)';
+  tabLog.style.borderBottom   = isEntry ? '3px solid transparent' : '3px solid var(--blue-main)';
+
+  if (!isEntry) renderLog();
+}
+
+function saveEntry() {
+  const session     = document.getElementById('fieldSession').value.trim();
+  const sessionType = document.getElementById('fieldSessionType').value;
+  const pLowest     = document.getElementById('pLowest').value;
+  const pHot        = document.getElementById('pHot').value;
+  const tRim        = document.getElementById('tRim').value;
+  const comments    = document.getElementById('fieldComments').value.trim();
+
+  let valid = true;
+  document.getElementById('errEntry').classList.remove('show');
+  document.getElementById('fieldSession').classList.remove('error');
+  document.getElementById('fieldSessionType').classList.remove('error');
+  document.getElementById('errSession').classList.remove('show');
+  document.getElementById('errSessionType').classList.remove('show');
+
+  if (!session) {
+    document.getElementById('fieldSession').classList.add('error');
+    document.getElementById('errSession').classList.add('show');
+    document.getElementById('errEntry').classList.add('show');
+    valid = false;
+  }
+  if (!sessionType) {
+    document.getElementById('fieldSessionType').classList.add('error');
+    document.getElementById('errSessionType').classList.add('show');
+    document.getElementById('errEntry').classList.add('show');
+    valid = false;
+  }
+  if (!valid) return;
+
+  const catDisplay = state.session.category === 'Other'
+    ? state.session.customCategory
+    : state.session.category;
+
+  const entry = {
+    id:              uid(),
+    timestamp:       new Date().toISOString(),
+    mechanic:        state.selectedMechanic,
+    date:            state.session.date,
+    circuit:         state.session.circuit,
+    category:        catDisplay,
+    driver:          state.session.driver,
+    session,
+    trackConditions: state.trackCondition,
+    sessionType,
+    pressureLowest:  pLowest,
+    pressureHot:     pHot,
+    tempRim:         tRim,
+    comments,
+  };
+
+  state.entries.push(entry);
+  save(KEYS.entries, state.entries);
+  save(KEYS.lastSessionType, sessionType);
+
+  resetEntryForm();
+  suggestSessionId();
+  setTrackCondition(state.trackCondition);
+  document.getElementById('fieldSessionType').value = sessionType;
+
+  updateLogBadge();
+  showToast(t('toastSaved'), 'success');
+  document.getElementById('entryPanel').scrollTop = 0;
+}
+
+function resetEntryForm() {
+  document.getElementById('fieldSession').value    = '';
+  document.getElementById('fieldSessionType').value= '';
+  document.getElementById('pLowest').value         = '';
+  document.getElementById('pHot').value            = '';
+  document.getElementById('tRim').value            = '';
+  document.getElementById('fieldComments').value   = '';
+  ['errSession','errSessionType','errEntry'].forEach(id =>
+    document.getElementById(id).classList.remove('show'));
+  ['fieldSession','fieldSessionType'].forEach(id =>
+    document.getElementById(id).classList.remove('error'));
+}
+
+function updateLogBadge() {
+  const badge = document.getElementById('logCountBadge');
+  if (badge) badge.textContent = state.entries.length || '';
+  const ec = document.getElementById('exportCount');
+  if (ec) ec.textContent = state.entries.length;
+}
+
+/* ================================================================
+   LOG / HISTORY
+================================================================ */
+function renderLog() {
+  const list = document.getElementById('logList');
+  document.getElementById('exportCount').textContent = state.entries.length;
+
+  if (!state.entries.length) {
+    list.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <p>${t('emptyLog')}</p>
+    </div>`;
+    updateLogBadge();
+    return;
+  }
+
+  const sorted = [...state.entries].reverse();
+  list.innerHTML = sorted.map(e => `
+    <div class="log-item" id="logitem_${e.id}">
+      <div class="log-item-header">
+        <div class="log-session-id">${escapeHtml(t('sessionLbl'))} ${escapeHtml(e.session)}</div>
+        <div class="log-badges">
+          <span class="badge ${e.trackConditions === 'Dry' ? '' : 'yellow'}">
+            ${e.trackConditions === 'Dry' ? t('dryLbl') : t('wetLbl')}
+          </span>
+          <span class="badge">${escapeHtml(e.sessionType)}</span>
+        </div>
+      </div>
+      <div class="log-item-body">
+        <div class="log-field">
+          <div class="lf-label">${t('logMechanic')}</div>
+          <div class="lf-val">${escapeHtml(e.mechanic||'—')}</div>
+        </div>
+        <div class="log-field">
+          <div class="lf-label">${t('logDate')}</div>
+          <div class="lf-val">${formatDate(e.date)}</div>
+        </div>
+        <div class="log-field">
+          <div class="lf-label">${t('logCircuit')}</div>
+          <div class="lf-val">${escapeHtml(e.circuit)}</div>
+        </div>
+        <div class="log-field">
+          <div class="lf-label">${t('logCategory')}</div>
+          <div class="lf-val">${escapeHtml(e.category)}</div>
+        </div>
+        <div class="log-field">
+          <div class="lf-label">${t('logDriver')}</div>
+          <div class="lf-val">${escapeHtml(e.driver)}</div>
+        </div>
+        <div class="log-field">
+          <div class="lf-label">${t('logLowest')}</div>
+          <div class="lf-val" style="color:var(--blue-main);font-weight:800;">
+            ${e.pressureLowest !== '' && e.pressureLowest !== undefined ? e.pressureLowest + ' bar' : '—'}
+          </div>
+        </div>
+        <div class="log-field">
+          <div class="lf-label">${t('logHot')}</div>
+          <div class="lf-val" style="color:#dc2626;font-weight:800;">
+            ${e.pressureHot !== '' && e.pressureHot !== undefined ? e.pressureHot + ' bar' : '—'}
+          </div>
+        </div>
+        <div class="log-field">
+          <div class="lf-label">${t('logRimTemp')}</div>
+          <div class="lf-val">${e.tempRim !== '' && e.tempRim !== undefined ? e.tempRim + ' °C' : '—'}</div>
+        </div>
+        ${e.comments ? `
+        <div class="log-field full">
+          <div class="lf-label">${t('logComments')}</div>
+          <div class="lf-val" style="white-space:pre-wrap;">${escapeHtml(e.comments)}</div>
+        </div>` : ''}
+      </div>
+      <div class="log-item-actions">
+        <button class="btn btn-outline btn-sm" onclick="openEditModal('${e.id}')">${t('editBtn')}</button>
+        <button class="btn btn-sm" style="background:#fee2e2;color:var(--danger);border:1px solid #fca5a5;"
+                onclick="openDeleteModal('${e.id}','${escapeStr(e.session)}')">${t('deleteBtn')}</button>
+      </div>
+    </div>
+  `).join('');
+
+  updateLogBadge();
+}
+
+/* ================================================================
+   DELETE ENTRY
+================================================================ */
+function openDeleteModal(id, sessionLabel) {
+  state.pendingDeleteId = id;
+  document.getElementById('deleteModalBody').innerHTML =
+    `${t('deleteModalPre')} <strong>${t('sessionLbl')} ${escapeHtml(sessionLabel)}</strong> ${t('deleteModalPost')}`;
+  openModal('deleteModal');
+}
+
+function confirmDelete() {
+  if (!state.pendingDeleteId) return;
+  state.entries = state.entries.filter(e => e.id !== state.pendingDeleteId);
+  save(KEYS.entries, state.entries);
+  state.pendingDeleteId = null;
+  closeModal('deleteModal');
+  renderLog();
+  showToast(t('toastDeleted'), 'info');
+}
+
+/* ================================================================
+   CLEAR ALL
+================================================================ */
+function clearAllEntries() { openModal('clearAllModal'); }
+function confirmClearAll() {
+  state.entries = [];
+  save(KEYS.entries, state.entries);
+  closeModal('clearAllModal');
+  renderLog();
+  showToast(t('toastCleared'), 'info');
+}
+
+/* ================================================================
+   EDIT ENTRY
+================================================================ */
+function openEditModal(id) {
+  const entry = state.entries.find(e => e.id === id);
+  if (!entry) return;
+  state.pendingEditId = id;
+  window._editCondition = entry.trackConditions;
+
+  document.getElementById('editFormContent').innerHTML = `
+    <div class="form-group full">
+      <label class="form-label">${t('editSessionId')}</label>
+      <input type="text" id="editSession" class="form-control" value="${escapeHtml(entry.session)}" />
+    </div>
+    <div class="form-group full">
+      <label class="form-label">${t('editTrackCond')}</label>
+      <div class="toggle-group">
+        <button class="toggle-option ${entry.trackConditions==='Dry'?'active':''}"
+                id="editToggleDry" onclick="setEditCondition('Dry')">${t('dryLbl')}</button>
+        <button class="toggle-option wet ${entry.trackConditions==='Wet'?'active':''}"
+                id="editToggleWet" onclick="setEditCondition('Wet')">${t('wetLbl')}</button>
+      </div>
+    </div>
+    <div class="form-group full">
+      <label class="form-label">${t('editSessionType')}</label>
+      <select id="editSessionType" class="form-control">
+        <option value="Practice"  ${entry.sessionType==='Practice' ?'selected':''}>Practice</option>
+        <option value="Quali"     ${entry.sessionType==='Quali'    ?'selected':''}>Qualifying</option>
+        <option value="Heats"     ${entry.sessionType==='Heats'    ?'selected':''}>Heats</option>
+        <option value="Superheat" ${entry.sessionType==='Superheat'?'selected':''}>Superheat</option>
+        <option value="Final"     ${entry.sessionType==='Final'    ?'selected':''}>Final</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">${t('editLowest')}</label>
+      <input type="number" id="editPLowest" class="form-control"
+             value="${escapeHtml(entry.pressureLowest||'')}" step="0.01" inputmode="decimal" placeholder="0.00" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">${t('editHot')}</label>
+      <input type="number" id="editPHot" class="form-control"
+             value="${escapeHtml(entry.pressureHot||'')}" step="0.01" inputmode="decimal" placeholder="0.00" />
+    </div>
+    <div class="form-group full">
+      <label class="form-label">${t('editRimTemp')}</label>
+      <input type="number" id="editTRim" class="form-control"
+             value="${escapeHtml(entry.tempRim||'')}" step="0.1" inputmode="decimal" placeholder="0" />
+    </div>
+    <div class="form-group full">
+      <label class="form-label">${t('editComments')}</label>
+      <textarea id="editComments" class="form-control" rows="3" style="resize:none;">${escapeHtml(entry.comments||'')}</textarea>
+    </div>
+  `;
+  openModal('editModal');
+}
+
+function setEditCondition(cond) {
+  window._editCondition = cond;
+  document.getElementById('editToggleDry').classList.toggle('active', cond === 'Dry');
+  document.getElementById('editToggleWet').classList.toggle('active', cond === 'Wet');
+}
+
+function saveEdit() {
+  const idx = state.entries.findIndex(e => e.id === state.pendingEditId);
+  if (idx === -1) { closeModal('editModal'); return; }
+
+  state.entries[idx] = {
+    ...state.entries[idx],
+    session:         document.getElementById('editSession').value.trim()     || state.entries[idx].session,
+    trackConditions: window._editCondition                                   || state.entries[idx].trackConditions,
+    sessionType:     document.getElementById('editSessionType').value,
+    pressureLowest:  document.getElementById('editPLowest').value,
+    pressureHot:     document.getElementById('editPHot').value,
+    tempRim:         document.getElementById('editTRim').value,
+    comments:        document.getElementById('editComments').value.trim(),
+  };
+
+  save(KEYS.entries, state.entries);
+  closeModal('editModal');
+  renderLog();
+  showToast(t('toastUpdated'), 'success');
+}
+
+/* ================================================================
+   EXCEL EXPORT
+================================================================ */
+function exportExcel() {
+  if (!state.entries.length) { showToast(t('toastNoExport'), 'error_t'); return; }
+
+  const headers = [
+    'Mechanic', 'Date', 'Circuit', 'Category', 'Driver',
+    'Session', 'Track Conditions', 'Type of Session',
+    'Lowest Tire Pressure (bar)', 'Hot Tire Pressure (bar)',
+    'Rim Temperature (°C)', 'Comments', 'Timestamp'
+  ];
+
+  const rows = state.entries.map(e => [
+    e.mechanic     || '',
+    formatDate(e.date),
+    e.circuit      || '',
+    e.category     || '',
+    e.driver       || '',
+    e.session      || '',
+    e.trackConditions || '',
+    e.sessionType  || '',
+    e.pressureLowest !== '' && e.pressureLowest !== undefined ? parseFloat(e.pressureLowest) : '',
+    e.pressureHot    !== '' && e.pressureHot    !== undefined ? parseFloat(e.pressureHot)    : '',
+    e.tempRim        !== '' && e.tempRim        !== undefined ? parseFloat(e.tempRim)         : '',
+    e.comments     || '',
+    e.timestamp    || '',
+  ]);
+
+  const wsData = [headers, ...rows];
+  const ws     = XLSX.utils.aoa_to_sheet(wsData);
+
+  ws['!cols'] = [
+    {wch:18},{wch:12},{wch:18},{wch:10},{wch:20},
+    {wch:14},{wch:16},{wch:16},{wch:24},{wch:22},{wch:20},{wch:40},{wch:22}
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Tire Pressures');
+
+  const circuit  = (state.session.circuit || 'export').replace(/\s+/g,'_');
+  const date     = state.session.date     || new Date().toISOString().slice(0,10);
+  const filename = `DRT_Tirepressures_${circuit}_${date}.xlsx`;
+
+  XLSX.writeFile(wb, filename);
+  showToast(t('toastExported'), 'success');
+}
+
+/* ================================================================
+   PREVENT DOUBLE-TAP ZOOM
+================================================================ */
+let lastTap = 0;
+document.addEventListener('touchend', function(e) {
+  const now = Date.now();
+  if (now - lastTap < 300) e.preventDefault();
+  lastTap = now;
+}, { passive: false });
+
+/* ================================================================
+   INIT
+================================================================ */
+init();
+setLang(currentLang);
+</script>
+</body>
+</html>
