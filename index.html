@@ -321,6 +321,7 @@
   .toggle-option:first-child { border-right: 1px solid var(--blue-main); }
   .toggle-option.active { background: var(--blue-main); color: var(--white); }
   .toggle-option.active.wet { background: var(--blue-light); }
+  .toggle-option.active.grid-opt { background: var(--yellow-dark); color: var(--white); }
 
   .section-title {
     font-size: 12px;
@@ -478,12 +479,23 @@
   .session-chip .chip-label { font-weight: 800; color: var(--yellow-main); margin-right: 2px; }
   .session-chip .chip-edit { margin-left: auto; color: var(--yellow-main); font-size: 16px; }
 
-  /* Pressure grid */
-  .pressure-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  /* Pressure grid — 2x2 kart layout */
+  .pressure-grid-4 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .pressure-grid-1 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
   .pressure-cell {
     background: var(--blue-soft);
     border-radius: var(--radius-md);
-    padding: 14px;
+    padding: 12px 14px;
     border: 2px solid transparent;
     transition: border-color var(--transition);
   }
@@ -500,6 +512,23 @@
   }
   .pressure-cell input::placeholder { color: #b0bdd6; font-weight: 400; font-size: 18px; }
   .pressure-cell .cell-unit { font-size: 12px; color: var(--grey-text); margin-top: 2px; }
+
+  /* kart position labels */
+  .kart-axis-labels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .kart-axis-label {
+    text-align: center;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--grey-text);
+    padding: 2px 0;
+  }
 
   /* Log list */
   .log-list { display: flex; flex-direction: column; gap: 10px; }
@@ -521,6 +550,7 @@
     border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 700;
   }
   .badge.yellow { background: var(--yellow-main); color: var(--blue-dark); }
+  .badge.orange { background: var(--yellow-dark); color: var(--white); }
   .log-item-body {
     padding: 12px 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
   }
@@ -528,6 +558,26 @@
   .log-field .lf-label { color: var(--grey-text); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
   .log-field .lf-val { font-weight: 600; color: var(--dark-text); margin-top: 1px; }
   .log-field.full { grid-column: 1 / -1; }
+
+  /* pressure sub-grid in log */
+  .log-pressure-grid {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    background: var(--blue-soft);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    margin-top: 2px;
+  }
+  .log-pressure-grid.hot-grid {
+    background: #fee2e2;
+  }
+  .log-pressure-cell { font-size: 12px; }
+  .log-pressure-cell .lpc-label { color: var(--grey-text); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .log-pressure-cell .lpc-val { font-weight: 700; color: var(--blue-dark); font-size: 14px; }
+  .log-pressure-grid.hot-grid .log-pressure-cell .lpc-val { color: #b91c1c; }
+
   .log-item-actions {
     padding: 10px 14px; border-top: 1px solid var(--grey-border);
     display: flex; justify-content: flex-end; gap: 8px;
@@ -613,7 +663,6 @@
   ============================================================ -->
   <div id="screen1" class="screen active">
     <div class="splash-logo-wrap">
-      <!-- Language selector top-right on splash -->
       <div style="position:absolute;top:14px;right:14px;">
         <div class="lang-selector" id="langBar1">
           <button class="lang-btn active" onclick="setLang('en')">EN</button>
@@ -863,22 +912,53 @@
         <div class="error-msg" id="errSessionType">Please select a session type.</div>
       </div>
 
-      <!-- Lowest Tire Pressure -->
-      <div class="section-title" id="titleLowestPressure">🔵 Lowest Tire Pressure</div>
-      <div class="pressure-grid">
+      <!-- Cold Tire Pressures -->
+      <div class="section-title" id="titleColdPressure">🔵 Cold Tire Pressure</div>
+
+      <!-- Cold measurement location toggle -->
+      <div class="form-group">
+        <label class="form-label" id="lblColdLocation">Measured At</label>
+        <div class="toggle-group">
+          <button class="toggle-option active" id="toggleTent" onclick="setColdLocation('Tent')">🏕️ Tent</button>
+          <button class="toggle-option grid-opt" id="toggleGrid" onclick="setColdLocation('Grid')">🏁 Grid</button>
+        </div>
+      </div>
+
+      <!-- Cold 2x2 grid -->
+      <div class="kart-axis-labels">
+        <div class="kart-axis-label" id="lblFL_cold">◀ Front Left</div>
+        <div class="kart-axis-label" id="lblFR_cold">Front Right ▶</div>
+      </div>
+      <div class="pressure-grid-4">
         <div class="pressure-cell">
-          <div class="cell-label" id="labelLowestPressure">
-            <span class="dot" style="background:var(--blue-main)"></span>
-            Lowest Tire Pressure
-          </div>
-          <input type="number" id="pLowest" placeholder="0.00" step="0.01" min="0" max="3" inputmode="decimal" />
+          <div class="cell-label"><span class="dot"></span><span id="labelColdFL">FL</span></div>
+          <input type="number" id="pColdFL" placeholder="0.00" step="0.01" min="0" max="3" inputmode="decimal" />
           <div class="cell-unit">bar</div>
         </div>
+        <div class="pressure-cell">
+          <div class="cell-label"><span class="dot"></span><span id="labelColdFR">FR</span></div>
+          <input type="number" id="pColdFR" placeholder="0.00" step="0.01" min="0" max="3" inputmode="decimal" />
+          <div class="cell-unit">bar</div>
+        </div>
+        <div class="pressure-cell">
+          <div class="cell-label"><span class="dot"></span><span id="labelColdRL">RL</span></div>
+          <input type="number" id="pColdRL" placeholder="0.00" step="0.01" min="0" max="3" inputmode="decimal" />
+          <div class="cell-unit">bar</div>
+        </div>
+        <div class="pressure-cell">
+          <div class="cell-label"><span class="dot"></span><span id="labelColdRR">RR</span></div>
+          <input type="number" id="pColdRR" placeholder="0.00" step="0.01" min="0" max="3" inputmode="decimal" />
+          <div class="cell-unit">bar</div>
+        </div>
+      </div>
+      <div class="kart-axis-labels" style="margin-top:4px;">
+        <div class="kart-axis-label" id="lblRL_cold">◀ Rear Left</div>
+        <div class="kart-axis-label" id="lblRR_cold">Rear Right ▶</div>
       </div>
 
       <!-- Rim Temperature -->
       <div class="section-title" id="titleRimTemp">🌡️ Rim Temperature</div>
-      <div class="pressure-grid">
+      <div class="pressure-grid-1">
         <div class="pressure-cell" style="background:#fff3cd;border-color:var(--yellow-main);">
           <div class="cell-label" id="labelRimTemp" style="color:var(--yellow-dark);">
             <span class="dot" style="background:var(--yellow-dark)"></span>
@@ -890,18 +970,43 @@
         </div>
       </div>
 
-  <!-- Hot Tire Pressure -->
+      <!-- Hot Tire Pressures -->
       <div class="section-title" id="titleHotPressure">🔴 Hot Tire Pressure</div>
-      <div class="pressure-grid">
+
+      <!-- Hot 2x2 grid -->
+      <div class="kart-axis-labels">
+        <div class="kart-axis-label" id="lblFL_hot">◀ Front Left</div>
+        <div class="kart-axis-label" id="lblFR_hot">Front Right ▶</div>
+      </div>
+      <div class="pressure-grid-4">
         <div class="pressure-cell" style="background:#fee2e2;">
-          <div class="cell-label" id="labelHotPressure" style="color:#b91c1c;">
-            <span class="dot" style="background:#dc2626"></span>
-            Hot Tire Pressure
-          </div>
-          <input type="number" id="pHot" placeholder="0.00" step="0.01" min="0" max="3"
+          <div class="cell-label" style="color:#b91c1c;"><span class="dot" style="background:#dc2626"></span><span id="labelHotFL">FL</span></div>
+          <input type="number" id="pHotFL" placeholder="0.00" step="0.01" min="0" max="3"
                  inputmode="decimal" style="color:#b91c1c;" />
           <div class="cell-unit">bar</div>
         </div>
+        <div class="pressure-cell" style="background:#fee2e2;">
+          <div class="cell-label" style="color:#b91c1c;"><span class="dot" style="background:#dc2626"></span><span id="labelHotFR">FR</span></div>
+          <input type="number" id="pHotFR" placeholder="0.00" step="0.01" min="0" max="3"
+                 inputmode="decimal" style="color:#b91c1c;" />
+          <div class="cell-unit">bar</div>
+        </div>
+        <div class="pressure-cell" style="background:#fee2e2;">
+          <div class="cell-label" style="color:#b91c1c;"><span class="dot" style="background:#dc2626"></span><span id="labelHotRL">RL</span></div>
+          <input type="number" id="pHotRL" placeholder="0.00" step="0.01" min="0" max="3"
+                 inputmode="decimal" style="color:#b91c1c;" />
+          <div class="cell-unit">bar</div>
+        </div>
+        <div class="pressure-cell" style="background:#fee2e2;">
+          <div class="cell-label" style="color:#b91c1c;"><span class="dot" style="background:#dc2626"></span><span id="labelHotRR">RR</span></div>
+          <input type="number" id="pHotRR" placeholder="0.00" step="0.01" min="0" max="3"
+                 inputmode="decimal" style="color:#b91c1c;" />
+          <div class="cell-unit">bar</div>
+        </div>
+      </div>
+      <div class="kart-axis-labels" style="margin-top:4px;">
+        <div class="kart-axis-label" id="lblRL_hot">◀ Rear Left</div>
+        <div class="kart-axis-label" id="lblRR_hot">Rear Right ▶</div>
       </div>
 
       <!-- Comments -->
@@ -944,9 +1049,7 @@
     </div>
   </div>
 
-  <!-- ============================================================
-       MODAL — CONFIRM DELETE
-  ============================================================ -->
+  <!-- MODAL — CONFIRM DELETE -->
   <div class="modal-overlay" id="deleteModal">
     <div class="modal-box">
       <div class="modal-title" id="deleteModalTitle">⚠️ Delete Entry?</div>
@@ -958,9 +1061,7 @@
     </div>
   </div>
 
-  <!-- ============================================================
-       MODAL — EDIT ENTRY
-  ============================================================ -->
+  <!-- MODAL — EDIT ENTRY -->
   <div class="modal-overlay" id="editModal">
     <div class="modal-box">
       <div class="modal-title" id="editModalTitle">✏️ Edit Entry</div>
@@ -973,9 +1074,7 @@
     </div>
   </div>
 
-  <!-- ============================================================
-       MODAL — CONFIRM CLEAR ALL
-  ============================================================ -->
+  <!-- MODAL — CONFIRM CLEAR ALL -->
   <div class="modal-overlay" id="clearAllModal">
     <div class="modal-box">
       <div class="modal-title" id="clearAllModalTitle">⚠️ Clear All Entries?</div>
@@ -995,27 +1094,29 @@
    STORAGE KEYS
 ================================================================ */
 const KEYS = {
-  mechanics:      'drt_mechanics',
-  lastMechanic:   'drt_lastMechanic',
-  circuits:       'drt_circuits',
-  drivers:        'drt_drivers',
-  entries:        'drt_entries',
-  session:        'drt_session',
-  lastTrackCond:  'drt_lastTrackCond',
-  lastSessionType:'drt_lastSessionType',
-  lang:           'drt_lang',
+  mechanics:        'drt_mechanics',
+  lastMechanic:     'drt_lastMechanic',
+  circuits:         'drt_circuits',
+  drivers:          'drt_drivers',
+  entries:          'drt_entries',
+  session:          'drt_session',
+  lastTrackCond:    'drt_lastTrackCond',
+  lastColdLocation: 'drt_lastColdLocation',
+  lastSessionType:  'drt_lastSessionType',
+  lang:             'drt_lang',
 };
 
 let state = {
-  mechanics:        [],
-  selectedMechanic: null,
-  editMechanicsMode:false,
-  session:          { date:'', circuit:'', category:'', customCategory:'', driver:'' },
-  entries:          [],
-  trackCondition:   'Dry',
-  pendingDeleteId:  null,
-  pendingEditId:    null,
-  activeTab:        'entry',
+  mechanics:         [],
+  selectedMechanic:  null,
+  editMechanicsMode: false,
+  session:           { date:'', circuit:'', category:'', customCategory:'', driver:'' },
+  entries:           [],
+  trackCondition:    'Dry',
+  coldLocation:      'Tent',
+  pendingDeleteId:   null,
+  pendingEditId:     null,
+  activeTab:         'entry',
 };
 
 /* ================================================================
@@ -1048,6 +1149,9 @@ function formatDate(d) {
   const [y,m,day] = d.split('-');
   return `${day}/${m}/${y}`;
 }
+function fmtBar(v) {
+  return (v !== '' && v !== undefined && v !== null) ? v + ' bar' : '—';
+}
 
 /* ================================================================
    TOAST
@@ -1066,12 +1170,8 @@ function showToast(msg, type='success') {
 /* ================================================================
    MODAL
 ================================================================ */
-function openModal(id) {
-  document.getElementById(id).classList.add('show');
-}
-function closeModal(id) {
-  document.getElementById(id).classList.remove('show');
-}
+function openModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
   overlay.addEventListener('click', function(e) {
     if (e.target === this) closeModal(this.id);
@@ -1122,14 +1222,23 @@ const TRANSLATIONS = {
     wetLbl:                '🌧️ Wet',
     sessionTypeLbl:        'Type of Session',
     sessionTypeDefault:    '— Select Type —',
-    lowestPressureTitle:   '🔵 Lowest Tire Pressure',
-    lowestPressureLabel:   'Lowest Tire Pressure',
+    coldPressureTitle:     '🔵 Cold Tire Pressure',
+    coldLocationLbl:       'Measured At',
+    tentLbl:               '🏕️ Tent',
+    gridLbl:               '🏁 Grid',
+    axisFL:                '◀ Front Left',
+    axisFR:                'Front Right ▶',
+    axisRL:                '◀ Rear Left',
+    axisRR:                'Rear Right ▶',
+    labelFL:               'FL',
+    labelFR:               'FR',
+    labelRL:               'RL',
+    labelRR:               'RR',
     hotPressureTitle:      '🔴 Hot Tire Pressure',
-    hotPressureLabel:      'Hot Tire Pressure',
     rimTempTitle:          '🌡️ Rim Temperature',
     rimTempLabel:          'Rim Temperature',
     notesTitle:            '📝 Notes',
-    notesPh:               'e.g. Driver reports understeer, new tires, changed rear pressure after 3 laps…',
+    notesPh:               'e.g. Driver reports understeer, new tires…',
     requiredFields:        '⚠ Please fill in all required fields.',
     saveEntry:             '💾 Save Entry',
     totalEntries:          'Total Entries',
@@ -1141,8 +1250,9 @@ const TRANSLATIONS = {
     logCategory:           'Category',
     logDriver:             'Driver',
     logSessionType:        'Type',
-    logLowest:             'Lowest Pressure',
-    logHot:                'Hot Pressure',
+    logColdLocation:       'Cold Measured At',
+    logColdPressures:      'Cold Pressures',
+    logHotPressures:       'Hot Pressures',
     logRimTemp:            'Rim Temp',
     logComments:           'Comments',
     editBtn:               '✏️ Edit',
@@ -1159,8 +1269,15 @@ const TRANSLATIONS = {
     editSessionId:         'Session ID',
     editTrackCond:         'Track Conditions',
     editSessionType:       'Type of Session',
-    editLowest:            'Lowest Pressure (bar)',
-    editHot:               'Hot Pressure (bar)',
+    editColdLocation:      'Cold Measured At',
+    editColdFL:            'Cold FL (bar)',
+    editColdFR:            'Cold FR (bar)',
+    editColdRL:            'Cold RL (bar)',
+    editColdRR:            'Cold RR (bar)',
+    editHotFL:             'Hot FL (bar)',
+    editHotFR:             'Hot FR (bar)',
+    editHotRL:             'Hot RL (bar)',
+    editHotRR:             'Hot RR (bar)',
     editRimTemp:           'Rim Temp (°C)',
     editComments:          'Comments',
     editCancel:            'Cancel',
@@ -1190,6 +1307,8 @@ const TRANSLATIONS = {
     sessionLbl:            'Session:',
     dryText:               'Dry',
     wetText:               'Wet',
+    tentText:              'Tent',
+    gridText:              'Grid',
   },
   nl: {
     appTagline:            'Professioneel Kart Racen — Bandendruk Logger',
@@ -1231,14 +1350,23 @@ const TRANSLATIONS = {
     wetLbl:                '🌧️ Nat',
     sessionTypeLbl:        'Type Sessie',
     sessionTypeDefault:    '— Selecteer Type —',
-    lowestPressureTitle:   '🔵 Laagste Bandendruk',
-    lowestPressureLabel:   'Laagste Bandendruk',
+    coldPressureTitle:     '🔵 Koude Bandendruk',
+    coldLocationLbl:       'Gemeten Bij',
+    tentLbl:               '🏕️ Tent',
+    gridLbl:               '🏁 Grid',
+    axisFL:                '◀ Voor Links',
+    axisFR:                'Voor Rechts ▶',
+    axisRL:                '◀ Achter Links',
+    axisRR:                'Achter Rechts ▶',
+    labelFL:               'VL',
+    labelFR:               'VR',
+    labelRL:               'AL',
+    labelRR:               'AR',
     hotPressureTitle:      '🔴 Warme Bandendruk',
-    hotPressureLabel:      'Warme Bandendruk',
     rimTempTitle:          '🌡️ Velgtemperatuur',
     rimTempLabel:          'Velgtemperatuur',
     notesTitle:            '📝 Notities',
-    notesPh:               'bv. Rijder meldt onderstuur, nieuwe banden, achterdruk gewijzigd na 3 ronden…',
+    notesPh:               'bv. Rijder meldt onderstuur, nieuwe banden…',
     requiredFields:        '⚠ Vul alle verplichte velden in.',
     saveEntry:             '💾 Opslaan',
     totalEntries:          'Totaal Registraties',
@@ -1250,8 +1378,9 @@ const TRANSLATIONS = {
     logCategory:           'Categorie',
     logDriver:             'Rijder',
     logSessionType:        'Type',
-    logLowest:             'Laagste Druk',
-    logHot:                'Warme Druk',
+    logColdLocation:       'Koud Gemeten Bij',
+    logColdPressures:      'Koude Drukken',
+    logHotPressures:       'Warme Drukken',
     logRimTemp:            'Velgtemp.',
     logComments:           'Opmerkingen',
     editBtn:               '✏️ Bewerken',
@@ -1268,8 +1397,15 @@ const TRANSLATIONS = {
     editSessionId:         'Sessie ID',
     editTrackCond:         'Baancondities',
     editSessionType:       'Type Sessie',
-    editLowest:            'Laagste Druk (bar)',
-    editHot:               'Warme Druk (bar)',
+    editColdLocation:      'Koud Gemeten Bij',
+    editColdFL:            'Koud VL (bar)',
+    editColdFR:            'Koud VR (bar)',
+    editColdRL:            'Koud AL (bar)',
+    editColdRR:            'Koud AR (bar)',
+    editHotFL:             'Warm VL (bar)',
+    editHotFR:             'Warm VR (bar)',
+    editHotRL:             'Warm AL (bar)',
+    editHotRR:             'Warm AR (bar)',
     editRimTemp:           'Velgtemp. (°C)',
     editComments:          'Opmerkingen',
     editCancel:            'Annuleren',
@@ -1299,6 +1435,8 @@ const TRANSLATIONS = {
     sessionLbl:            'Sessie:',
     dryText:               'Droog',
     wetText:               'Nat',
+    tentText:              'Tent',
+    gridText:              'Grid',
   },
   fr: {
     appTagline:            'Karting Professionnel — Enregistreur de Pression de Pneus',
@@ -1315,7 +1453,7 @@ const TRANSLATIONS = {
     continueSession:       'Continuer → Infos Session',
     sessionInfo:           'Infos Session',
     mechanicLbl:           'Mécanicien',
-    infoSessionBadge:      'ℹ️ Saisissez les détails de session une fois — ils seront repris pour toutes les entrées de pression.',
+    infoSessionBadge:      'ℹ️ Saisissez les détails de session une fois — ils seront repris pour toutes les entrées.',
     dateLbl:               'Date',
     circuitLbl:            'Circuit',
     circuitPh:             'ex. Genk, Lonato, PFI',
@@ -1340,14 +1478,23 @@ const TRANSLATIONS = {
     wetLbl:                '🌧️ Mouillé',
     sessionTypeLbl:        'Type de Session',
     sessionTypeDefault:    '— Sélectionner Type —',
-    lowestPressureTitle:   '🔵 Pression la Plus Basse',
-    lowestPressureLabel:   'Pression la Plus Basse',
+    coldPressureTitle:     '🔵 Pression à Froid',
+    coldLocationLbl:       'Mesuré À',
+    tentLbl:               '🏕️ Tente',
+    gridLbl:               '🏁 Grille',
+    axisFL:                '◀ Avant Gauche',
+    axisFR:                'Avant Droit ▶',
+    axisRL:                '◀ Arrière Gauche',
+    axisRR:                'Arrière Droit ▶',
+    labelFL:               'AG',
+    labelFR:               'AD',
+    labelRL:               'RG',
+    labelRR:               'RD',
     hotPressureTitle:      '🔴 Pression à Chaud',
-    hotPressureLabel:      'Pression à Chaud',
     rimTempTitle:          '🌡️ Température de Jante',
     rimTempLabel:          'Température de Jante',
     notesTitle:            '📝 Notes',
-    notesPh:               'ex. Le pilote signale du sous-virage, pneus neufs, pression arrière modifiée après 3 tours…',
+    notesPh:               'ex. Le pilote signale du sous-virage, pneus neufs…',
     requiredFields:        '⚠ Veuillez remplir tous les champs obligatoires.',
     saveEntry:             '💾 Enregistrer',
     totalEntries:          'Total des Entrées',
@@ -1359,8 +1506,9 @@ const TRANSLATIONS = {
     logCategory:           'Catégorie',
     logDriver:             'Pilote',
     logSessionType:        'Type',
-    logLowest:             'Pression Min.',
-    logHot:                'Pression Chaude',
+    logColdLocation:       'Froid Mesuré À',
+    logColdPressures:      'Pressions à Froid',
+    logHotPressures:       'Pressions à Chaud',
     logRimTemp:            'Temp. Jante',
     logComments:           'Commentaires',
     editBtn:               '✏️ Modifier',
@@ -1377,14 +1525,21 @@ const TRANSLATIONS = {
     editSessionId:         'ID Session',
     editTrackCond:         'Conditions de Piste',
     editSessionType:       'Type de Session',
-    editLowest:            'Pression Min. (bar)',
-    editHot:               'Pression Chaude (bar)',
+    editColdLocation:      'Froid Mesuré À',
+    editColdFL:            'Froid AG (bar)',
+    editColdFR:            'Froid AD (bar)',
+    editColdRL:            'Froid RG (bar)',
+    editColdRR:            'Froid RD (bar)',
+    editHotFL:             'Chaud AG (bar)',
+    editHotFR:             'Chaud AD (bar)',
+    editHotRL:             'Chaud RG (bar)',
+    editHotRR:             'Chaud RD (bar)',
     editRimTemp:           'Temp. Jante (°C)',
     editComments:          'Commentaires',
     editCancel:            'Annuler',
     editSave:              'Sauvegarder',
     clearAllTitle:         '⚠️ Effacer Toutes les Entrées ?',
-    clearAllBody:          'Ceci supprimera définitivement TOUTES les entrées et ne peut pas être annulé.',
+    clearAllBody:          'Ceci supprimera définitivement TOUTES les entrées.',
     clearAllCancel:        'Annuler',
     clearAllConfirm:       'Tout Effacer',
     toastSaved:            'Entrée enregistrée avec succès !',
@@ -1404,10 +1559,12 @@ const TRANSLATIONS = {
     errDriver:             'Veuillez saisir le nom du pilote.',
     errSession:            'Veuillez saisir un identifiant de session.',
     errSessionType:        'Veuillez sélectionner un type de session.',
-    removeMechanicConfirm: 'Retirer "%s" de la liste ? Les données enregistrées seront conservées.',
+    removeMechanicConfirm: 'Retirer "%s" de la liste ? Les données seront conservées.',
     sessionLbl:            'Session :',
     dryText:               'Sec',
     wetText:               'Mouillé',
+    tentText:              'Tente',
+    gridText:              'Grille',
   }
 };
 
@@ -1422,7 +1579,6 @@ function t(key) {
 function setLang(lang) {
   currentLang = lang;
   save(KEYS.lang, lang);
-  // Update all lang buttons
   document.querySelectorAll('.lang-btn').forEach(btn => {
     btn.classList.toggle('active', btn.textContent.trim().toLowerCase() === lang);
   });
@@ -1444,8 +1600,7 @@ function applyTranslations() {
 
   // Screen 2
   document.getElementById('s2HeaderTitle').textContent       = t('sessionInfo');
-  const s2mech = document.getElementById('s2mechLabel');
-  s2mech.textContent = t('mechanicLbl') + ': ' + (state.selectedMechanic || '—');
+  document.getElementById('s2mechLabel').textContent         = t('mechanicLbl') + ': ' + (state.selectedMechanic || '—');
   document.getElementById('s2InfoBadge').textContent         = t('infoSessionBadge');
   document.getElementById('lblDate').innerHTML               = t('dateLbl') + ' <span class="required">*</span>';
   document.getElementById('lblCircuit').innerHTML            = t('circuitLbl') + ' <span class="required">*</span>';
@@ -1486,13 +1641,36 @@ function applyTranslations() {
   document.getElementById('errSessionType').textContent      = t('errSessionType');
   document.getElementById('errEntry').textContent            = t('requiredFields');
 
-  // Section titles & cell labels
-  document.getElementById('titleLowestPressure').textContent = t('lowestPressureTitle');
-  document.getElementById('labelLowestPressure').innerHTML   = `<span class="dot" style="background:var(--blue-main)"></span>${t('lowestPressureLabel')}`;
-  document.getElementById('titleHotPressure').textContent    = t('hotPressureTitle');
-  document.getElementById('labelHotPressure').innerHTML      = `<span class="dot" style="background:#dc2626"></span>${t('hotPressureLabel')}`;
+  // Cold pressure section
+  document.getElementById('titleColdPressure').textContent   = t('coldPressureTitle');
+  document.getElementById('lblColdLocation').textContent     = t('coldLocationLbl');
+  document.getElementById('toggleTent').textContent          = t('tentLbl');
+  document.getElementById('toggleGrid').textContent          = t('gridLbl');
+  document.getElementById('lblFL_cold').textContent          = t('axisFL');
+  document.getElementById('lblFR_cold').textContent          = t('axisFR');
+  document.getElementById('lblRL_cold').textContent          = t('axisRL');
+  document.getElementById('lblRR_cold').textContent          = t('axisRR');
+  document.getElementById('labelColdFL').textContent         = t('labelFL');
+  document.getElementById('labelColdFR').textContent         = t('labelFR');
+  document.getElementById('labelColdRL').textContent         = t('labelRL');
+  document.getElementById('labelColdRR').textContent         = t('labelRR');
+
+  // Rim temp
   document.getElementById('titleRimTemp').textContent        = t('rimTempTitle');
   document.getElementById('labelRimTemp').innerHTML          = `<span class="dot" style="background:var(--yellow-dark)"></span>${t('rimTempLabel')}`;
+
+  // Hot pressure section
+  document.getElementById('titleHotPressure').textContent    = t('hotPressureTitle');
+  document.getElementById('lblFL_hot').textContent           = t('axisFL');
+  document.getElementById('lblFR_hot').textContent           = t('axisFR');
+  document.getElementById('lblRL_hot').textContent           = t('axisRL');
+  document.getElementById('lblRR_hot').textContent           = t('axisRR');
+  document.getElementById('labelHotFL').textContent          = t('labelFL');
+  document.getElementById('labelHotFR').textContent          = t('labelFR');
+  document.getElementById('labelHotRL').textContent          = t('labelRL');
+  document.getElementById('labelHotRR').textContent          = t('labelRR');
+
+  // Notes
   document.getElementById('titleNotes').textContent          = t('notesTitle');
   document.getElementById('fieldComments').placeholder       = t('notesPh');
 
@@ -1518,36 +1696,29 @@ function applyTranslations() {
   document.getElementById('btnClearAllCancel').textContent   = t('clearAllCancel');
   document.getElementById('btnClearAllConfirm').textContent  = t('clearAllConfirm');
 
-  // Re-render dynamic content
   renderMechanicList();
   if (state.activeTab === 'log') renderLog();
   updateLogBadge();
 }
 
 /* ================================================================
-   LOGO INIT
-================================================================ */
-function initLogo() {
-  document.getElementById('logoImg1').src = 'logo.png';
-}
-
-/* ================================================================
    INIT APP
 ================================================================ */
 function init() {
-  initLogo();
-  state.mechanics       = load(KEYS.mechanics, []);
-  state.selectedMechanic= load(KEYS.lastMechanic, null);
-  state.entries         = load(KEYS.entries, []);
-  state.session         = load(KEYS.session, { date:'', circuit:'', category:'', customCategory:'', driver:'' });
-  state.trackCondition  = load(KEYS.lastTrackCond, 'Dry');
+  document.getElementById('logoImg1').src = 'logo.png';
+  state.mechanics        = load(KEYS.mechanics, []);
+  state.selectedMechanic = load(KEYS.lastMechanic, null);
+  state.entries          = load(KEYS.entries, []);
+  state.session          = load(KEYS.session, { date:'', circuit:'', category:'', customCategory:'', driver:'' });
+  state.trackCondition   = load(KEYS.lastTrackCond, 'Dry');
+  state.coldLocation     = load(KEYS.lastColdLocation, 'Tent');
 
   if (!state.session.date) {
     state.session.date = new Date().toISOString().slice(0,10);
   }
 
   goToScreen(1);
-  setLang(currentLang); // applies translations + renders mechanic list
+  setLang(currentLang);
 }
 
 /* ================================================================
@@ -1572,9 +1743,7 @@ function renderMechanicList() {
     </div>`;
     return;
   }
-  list.innerHTML = state.mechanics.map(m => {
-    const safeId = btoa(encodeURIComponent(m)).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
-    return `
+  list.innerHTML = state.mechanics.map(m => `
     <div class="mechanic-item ${state.selectedMechanic === m ? 'selected':''}"
          onclick="selectMechanic('${escapeStr(m)}')">
       <div class="mechanic-name">
@@ -1586,8 +1755,7 @@ function renderMechanicList() {
                 onclick="deleteMechanic(event,'${escapeStr(m)}')">🗑</button>
         <span class="selected-check">✔</span>
       </div>
-    </div>`;
-  }).join('');
+    </div>`).join('');
 }
 
 function selectMechanic(name) {
@@ -1660,7 +1828,7 @@ document.getElementById('newMechanicInput').addEventListener('keydown', e => {
 ================================================================ */
 function renderScreen2Fields() {
   const s = state.session;
-  document.getElementById('fieldDate').value = s.date || new Date().toISOString().slice(0,10);
+  document.getElementById('fieldDate').value    = s.date || new Date().toISOString().slice(0,10);
   document.getElementById('fieldCircuit').value = s.circuit || '';
   document.getElementById('fieldDriver').value  = s.driver  || '';
   const catSel = document.getElementById('fieldCategory');
@@ -1700,11 +1868,11 @@ function showErr(errId, fieldId) {
 }
 
 function goToScreen3() {
-  const date       = document.getElementById('fieldDate').value;
-  const circuit    = document.getElementById('fieldCircuit').value.trim();
-  const category   = document.getElementById('fieldCategory').value;
-  const customCat  = document.getElementById('fieldCustomCategory').value.trim();
-  const driver     = document.getElementById('fieldDriver').value.trim();
+  const date      = document.getElementById('fieldDate').value;
+  const circuit   = document.getElementById('fieldCircuit').value.trim();
+  const category  = document.getElementById('fieldCategory').value;
+  const customCat = document.getElementById('fieldCustomCategory').value.trim();
+  const driver    = document.getElementById('fieldDriver').value.trim();
 
   clearErrors2();
   let valid = true;
@@ -1722,6 +1890,7 @@ function goToScreen3() {
 
   updateScreen3Summary();
   setTrackCondition(state.trackCondition, false);
+  setColdLocation(state.coldLocation, false);
   suggestSessionId();
 
   const lastType = load(KEYS.lastSessionType, '');
@@ -1781,13 +1950,20 @@ function acBlur(type) {
 }
 
 /* ================================================================
-   SCREEN 3 — DATA ENTRY
+   SCREEN 3 — TRACK CONDITION & COLD LOCATION
 ================================================================ */
 function setTrackCondition(cond, updateStorage = true) {
   state.trackCondition = cond;
   if (updateStorage) save(KEYS.lastTrackCond, cond);
   document.getElementById('toggleDry').classList.toggle('active', cond === 'Dry');
   document.getElementById('toggleWet').classList.toggle('active', cond === 'Wet');
+}
+
+function setColdLocation(loc, updateStorage = true) {
+  state.coldLocation = loc;
+  if (updateStorage) save(KEYS.lastColdLocation, loc);
+  document.getElementById('toggleTent').classList.toggle('active', loc === 'Tent');
+  document.getElementById('toggleGrid').classList.toggle('active', loc === 'Grid');
 }
 
 function suggestSessionId() {
@@ -1803,10 +1979,10 @@ function suggestSessionId() {
 function switchTab(tab) {
   state.activeTab = tab;
   const isEntry = tab === 'entry';
-  document.getElementById('entryPanel').style.display  = isEntry ? 'block' : 'none';
-  document.getElementById('logPanel').style.display    = isEntry ? 'none'  : 'block';
-  document.getElementById('entryActions').style.display= isEntry ? 'flex'  : 'none';
-  document.getElementById('logActions').style.display  = isEntry ? 'none'  : 'flex';
+  document.getElementById('entryPanel').style.display   = isEntry ? 'block' : 'none';
+  document.getElementById('logPanel').style.display     = isEntry ? 'none'  : 'block';
+  document.getElementById('entryActions').style.display = isEntry ? 'flex'  : 'none';
+  document.getElementById('logActions').style.display   = isEntry ? 'none'  : 'flex';
 
   const tabEntry = document.getElementById('tabEntry');
   const tabLog   = document.getElementById('tabLog');
@@ -1818,12 +1994,12 @@ function switchTab(tab) {
   if (!isEntry) renderLog();
 }
 
+/* ================================================================
+   SAVE ENTRY
+================================================================ */
 function saveEntry() {
   const session     = document.getElementById('fieldSession').value.trim();
   const sessionType = document.getElementById('fieldSessionType').value;
-  const pLowest     = document.getElementById('pLowest').value;
-  const pHot        = document.getElementById('pHot').value;
-  const tRim        = document.getElementById('tRim').value;
   const comments    = document.getElementById('fieldComments').value.trim();
 
   let valid = true;
@@ -1862,9 +2038,16 @@ function saveEntry() {
     session,
     trackConditions: state.trackCondition,
     sessionType,
-    pressureLowest:  pLowest,
-    pressureHot:     pHot,
-    tempRim:         tRim,
+    coldLocation:    state.coldLocation,
+    coldFL:          document.getElementById('pColdFL').value,
+    coldFR:          document.getElementById('pColdFR').value,
+    coldRL:          document.getElementById('pColdRL').value,
+    coldRR:          document.getElementById('pColdRR').value,
+    tempRim:         document.getElementById('tRim').value,
+    hotFL:           document.getElementById('pHotFL').value,
+    hotFR:           document.getElementById('pHotFR').value,
+    hotRL:           document.getElementById('pHotRL').value,
+    hotRR:           document.getElementById('pHotRR').value,
     comments,
   };
 
@@ -1875,6 +2058,7 @@ function saveEntry() {
   resetEntryForm();
   suggestSessionId();
   setTrackCondition(state.trackCondition);
+  setColdLocation(state.coldLocation);
   document.getElementById('fieldSessionType').value = sessionType;
 
   updateLogBadge();
@@ -1883,12 +2067,18 @@ function saveEntry() {
 }
 
 function resetEntryForm() {
-  document.getElementById('fieldSession').value    = '';
-  document.getElementById('fieldSessionType').value= '';
-  document.getElementById('pLowest').value         = '';
-  document.getElementById('pHot').value            = '';
-  document.getElementById('tRim').value            = '';
-  document.getElementById('fieldComments').value   = '';
+  document.getElementById('fieldSession').value     = '';
+  document.getElementById('fieldSessionType').value = '';
+  document.getElementById('pColdFL').value          = '';
+  document.getElementById('pColdFR').value          = '';
+  document.getElementById('pColdRL').value          = '';
+  document.getElementById('pColdRR').value          = '';
+  document.getElementById('tRim').value             = '';
+  document.getElementById('pHotFL').value           = '';
+  document.getElementById('pHotFR').value           = '';
+  document.getElementById('pHotRL').value           = '';
+  document.getElementById('pHotRR').value           = '';
+  document.getElementById('fieldComments').value    = '';
   ['errSession','errSessionType','errEntry'].forEach(id =>
     document.getElementById(id).classList.remove('show'));
   ['fieldSession','fieldSessionType'].forEach(id =>
@@ -1918,8 +2108,13 @@ function renderLog() {
     return;
   }
 
+  const fl = t('labelFL'), fr = t('labelFR'), rl = t('labelRL'), rr = t('labelRR');
+
   const sorted = [...state.entries].reverse();
-  list.innerHTML = sorted.map(e => `
+  list.innerHTML = sorted.map(e => {
+    const locLabel = e.coldLocation === 'Grid' ? t('gridText') : t('tentText');
+    const locBadgeClass = e.coldLocation === 'Grid' ? 'orange' : '';
+    return `
     <div class="log-item" id="logitem_${e.id}">
       <div class="log-item-header">
         <div class="log-session-id">${escapeHtml(t('sessionLbl'))} ${escapeHtml(e.session)}</div>
@@ -1952,21 +2147,59 @@ function renderLog() {
           <div class="lf-val">${escapeHtml(e.driver)}</div>
         </div>
         <div class="log-field">
-          <div class="lf-label">${t('logLowest')}</div>
-          <div class="lf-val" style="color:var(--blue-main);font-weight:800;">
-            ${e.pressureLowest !== '' && e.pressureLowest !== undefined ? e.pressureLowest + ' bar' : '—'}
-          </div>
-        </div>
-        <div class="log-field">
-          <div class="lf-label">${t('logHot')}</div>
-          <div class="lf-val" style="color:#dc2626;font-weight:800;">
-            ${e.pressureHot !== '' && e.pressureHot !== undefined ? e.pressureHot + ' bar' : '—'}
-          </div>
-        </div>
-        <div class="log-field">
           <div class="lf-label">${t('logRimTemp')}</div>
           <div class="lf-val">${e.tempRim !== '' && e.tempRim !== undefined ? e.tempRim + ' °C' : '—'}</div>
         </div>
+
+        <!-- Cold pressures sub-grid -->
+        <div class="log-field full" style="margin-top:4px;">
+          <div class="lf-label" style="margin-bottom:6px;">
+            🔵 ${t('logColdPressures')}
+            <span class="badge ${locBadgeClass}" style="font-size:10px;padding:2px 8px;margin-left:6px;">${locLabel}</span>
+          </div>
+          <div class="log-pressure-grid">
+            <div class="log-pressure-cell">
+              <div class="lpc-label">${fl}</div>
+              <div class="lpc-val">${fmtBar(e.coldFL)}</div>
+            </div>
+            <div class="log-pressure-cell">
+              <div class="lpc-label">${fr}</div>
+              <div class="lpc-val">${fmtBar(e.coldFR)}</div>
+            </div>
+            <div class="log-pressure-cell">
+              <div class="lpc-label">${rl}</div>
+              <div class="lpc-val">${fmtBar(e.coldRL)}</div>
+            </div>
+            <div class="log-pressure-cell">
+              <div class="lpc-label">${rr}</div>
+              <div class="lpc-val">${fmtBar(e.coldRR)}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hot pressures sub-grid -->
+        <div class="log-field full" style="margin-top:4px;">
+          <div class="lf-label" style="margin-bottom:6px;">🔴 ${t('logHotPressures')}</div>
+          <div class="log-pressure-grid hot-grid">
+            <div class="log-pressure-cell">
+              <div class="lpc-label">${fl}</div>
+              <div class="lpc-val">${fmtBar(e.hotFL)}</div>
+            </div>
+            <div class="log-pressure-cell">
+              <div class="lpc-label">${fr}</div>
+              <div class="lpc-val">${fmtBar(e.hotFR)}</div>
+            </div>
+            <div class="log-pressure-cell">
+              <div class="lpc-label">${rl}</div>
+              <div class="lpc-val">${fmtBar(e.hotRL)}</div>
+            </div>
+            <div class="log-pressure-cell">
+              <div class="lpc-label">${rr}</div>
+              <div class="lpc-val">${fmtBar(e.hotRR)}</div>
+            </div>
+          </div>
+        </div>
+
         ${e.comments ? `
         <div class="log-field full">
           <div class="lf-label">${t('logComments')}</div>
@@ -1978,8 +2211,8 @@ function renderLog() {
         <button class="btn btn-sm" style="background:#fee2e2;color:var(--danger);border:1px solid #fca5a5;"
                 onclick="openDeleteModal('${e.id}','${escapeStr(e.session)}')">${t('deleteBtn')}</button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 
   updateLogBadge();
 }
@@ -2024,6 +2257,7 @@ function openEditModal(id) {
   if (!entry) return;
   state.pendingEditId = id;
   window._editCondition = entry.trackConditions;
+  window._editColdLocation = entry.coldLocation || 'Tent';
 
   document.getElementById('editFormContent').innerHTML = `
     <div class="form-group full">
@@ -2049,20 +2283,59 @@ function openEditModal(id) {
         <option value="Final"     ${entry.sessionType==='Final'    ?'selected':''}>Final</option>
       </select>
     </div>
-    <div class="form-group">
-      <label class="form-label">${t('editLowest')}</label>
-      <input type="number" id="editPLowest" class="form-control"
-             value="${escapeHtml(entry.pressureLowest||'')}" step="0.01" inputmode="decimal" placeholder="0.00" />
+    <div class="form-group full">
+      <label class="form-label">${t('editColdLocation')}</label>
+      <div class="toggle-group">
+        <button class="toggle-option ${(entry.coldLocation||'Tent')==='Tent'?'active':''}"
+                id="editToggleTent" onclick="setEditColdLocation('Tent')">${t('tentLbl')}</button>
+        <button class="toggle-option grid-opt ${(entry.coldLocation||'Tent')==='Grid'?'active':''}"
+                id="editToggleGrid" onclick="setEditColdLocation('Grid')">${t('gridLbl')}</button>
+      </div>
     </div>
     <div class="form-group">
-      <label class="form-label">${t('editHot')}</label>
-      <input type="number" id="editPHot" class="form-control"
-             value="${escapeHtml(entry.pressureHot||'')}" step="0.01" inputmode="decimal" placeholder="0.00" />
+      <label class="form-label">${t('editColdFL')}</label>
+      <input type="number" id="editColdFL" class="form-control"
+             value="${escapeHtml(entry.coldFL||'')}" step="0.01" inputmode="decimal" placeholder="0.00" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">${t('editColdFR')}</label>
+      <input type="number" id="editColdFR" class="form-control"
+             value="${escapeHtml(entry.coldFR||'')}" step="0.01" inputmode="decimal" placeholder="0.00" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">${t('editColdRL')}</label>
+      <input type="number" id="editColdRL" class="form-control"
+             value="${escapeHtml(entry.coldRL||'')}" step="0.01" inputmode="decimal" placeholder="0.00" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">${t('editColdRR')}</label>
+      <input type="number" id="editColdRR" class="form-control"
+             value="${escapeHtml(entry.coldRR||'')}" step="0.01" inputmode="decimal" placeholder="0.00" />
     </div>
     <div class="form-group full">
       <label class="form-label">${t('editRimTemp')}</label>
       <input type="number" id="editTRim" class="form-control"
              value="${escapeHtml(entry.tempRim||'')}" step="0.1" inputmode="decimal" placeholder="0" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">${t('editHotFL')}</label>
+      <input type="number" id="editHotFL" class="form-control"
+             value="${escapeHtml(entry.hotFL||'')}" step="0.01" inputmode="decimal" placeholder="0.00" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">${t('editHotFR')}</label>
+      <input type="number" id="editHotFR" class="form-control"
+             value="${escapeHtml(entry.hotFR||'')}" step="0.01" inputmode="decimal" placeholder="0.00" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">${t('editHotRL')}</label>
+      <input type="number" id="editHotRL" class="form-control"
+             value="${escapeHtml(entry.hotRL||'')}" step="0.01" inputmode="decimal" placeholder="0.00" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">${t('editHotRR')}</label>
+      <input type="number" id="editHotRR" class="form-control"
+             value="${escapeHtml(entry.hotRR||'')}" step="0.01" inputmode="decimal" placeholder="0.00" />
     </div>
     <div class="form-group full">
       <label class="form-label">${t('editComments')}</label>
@@ -2078,18 +2351,31 @@ function setEditCondition(cond) {
   document.getElementById('editToggleWet').classList.toggle('active', cond === 'Wet');
 }
 
+function setEditColdLocation(loc) {
+  window._editColdLocation = loc;
+  document.getElementById('editToggleTent').classList.toggle('active', loc === 'Tent');
+  document.getElementById('editToggleGrid').classList.toggle('active', loc === 'Grid');
+}
+
 function saveEdit() {
   const idx = state.entries.findIndex(e => e.id === state.pendingEditId);
   if (idx === -1) { closeModal('editModal'); return; }
 
   state.entries[idx] = {
     ...state.entries[idx],
-    session:         document.getElementById('editSession').value.trim()     || state.entries[idx].session,
-    trackConditions: window._editCondition                                   || state.entries[idx].trackConditions,
+    session:         document.getElementById('editSession').value.trim()      || state.entries[idx].session,
+    trackConditions: window._editCondition                                    || state.entries[idx].trackConditions,
     sessionType:     document.getElementById('editSessionType').value,
-    pressureLowest:  document.getElementById('editPLowest').value,
-    pressureHot:     document.getElementById('editPHot').value,
+    coldLocation:    window._editColdLocation                                 || state.entries[idx].coldLocation,
+    coldFL:          document.getElementById('editColdFL').value,
+    coldFR:          document.getElementById('editColdFR').value,
+    coldRL:          document.getElementById('editColdRL').value,
+    coldRR:          document.getElementById('editColdRR').value,
     tempRim:         document.getElementById('editTRim').value,
+    hotFL:           document.getElementById('editHotFL').value,
+    hotFR:           document.getElementById('editHotFR').value,
+    hotRL:           document.getElementById('editHotRL').value,
+    hotRR:           document.getElementById('editHotRR').value,
     comments:        document.getElementById('editComments').value.trim(),
   };
 
@@ -2108,24 +2394,30 @@ function exportExcel() {
   const headers = [
     'Mechanic', 'Date', 'Circuit', 'Category', 'Driver',
     'Session', 'Track Conditions', 'Type of Session',
-    'Lowest Tire Pressure (bar)', 'Hot Tire Pressure (bar)',
-    'Rim Temperature (°C)', 'Comments', 'Timestamp'
+    'Cold Measured At',
+    'Cold FL (bar)', 'Cold FR (bar)', 'Cold RL (bar)', 'Cold RR (bar)',
+    'Rim Temperature (°C)',
+    'Hot FL (bar)', 'Hot FR (bar)', 'Hot RL (bar)', 'Hot RR (bar)',
+    'Comments', 'Timestamp'
   ];
 
+  const pf = v => (v !== '' && v !== undefined && v !== null) ? parseFloat(v) : '';
+
   const rows = state.entries.map(e => [
-    e.mechanic     || '',
+    e.mechanic        || '',
     formatDate(e.date),
-    e.circuit      || '',
-    e.category     || '',
-    e.driver       || '',
-    e.session      || '',
+    e.circuit         || '',
+    e.category        || '',
+    e.driver          || '',
+    e.session         || '',
     e.trackConditions || '',
-    e.sessionType  || '',
-    e.pressureLowest !== '' && e.pressureLowest !== undefined ? parseFloat(e.pressureLowest) : '',
-    e.pressureHot    !== '' && e.pressureHot    !== undefined ? parseFloat(e.pressureHot)    : '',
-    e.tempRim        !== '' && e.tempRim        !== undefined ? parseFloat(e.tempRim)         : '',
-    e.comments     || '',
-    e.timestamp    || '',
+    e.sessionType     || '',
+    e.coldLocation    || 'Tent',
+    pf(e.coldFL), pf(e.coldFR), pf(e.coldRL), pf(e.coldRR),
+    pf(e.tempRim),
+    pf(e.hotFL), pf(e.hotFR), pf(e.hotRL), pf(e.hotRR),
+    e.comments        || '',
+    e.timestamp       || '',
   ]);
 
   const wsData = [headers, ...rows];
@@ -2133,7 +2425,11 @@ function exportExcel() {
 
   ws['!cols'] = [
     {wch:18},{wch:12},{wch:18},{wch:10},{wch:20},
-    {wch:14},{wch:16},{wch:16},{wch:24},{wch:22},{wch:20},{wch:40},{wch:22}
+    {wch:12},{wch:16},{wch:14},{wch:16},
+    {wch:14},{wch:14},{wch:14},{wch:14},
+    {wch:18},
+    {wch:14},{wch:14},{wch:14},{wch:14},
+    {wch:40},{wch:22}
   ];
 
   const wb = XLSX.utils.book_new();
